@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OneWindow — The unified portal for NorthNext Ventures products</title>
+<meta name="description" content="Accounting, analytics, HR, and operations tools in one place. Built by NorthNext Ventures." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400..700;1,400..700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* ─────────────────────────────────────────────────────────────────
+     OneWindow landing page
+     ─────────────────────────────────────────────────────────────────
+     Style: Mix A from the direction catalog ("Warm Trust").
+     - Cream paper background (#f7f1e6)
+     - Serif headlines (Crimson Pro), sans body (Inter)
+     - Oxblood and deep teal accents
+     - Sunset glow at top-right of hero
+     - White cards with gold top stripe + soft shadows
+     Sections (top→bottom):
+       1. Sticky topbar with logo + nav + CTA
+       2. Hero with headline + sub + scroll-down CTA
+       3. Trust strip (stats / "trusted by")
+       4. Products grid (4 cards, large)
+       5. "Why OneWindow" features
+       6. Testimonials
+       7. Final CTA band
+       8. Footer
+  ────────────────────────────────────────────────────────────────── */
+
+  /* ─── Reset + tokens ─── */
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #f7f1e6;
+    color: #2d2418;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+  }
+
+  :root {
+    --ow-cream:        #f7f1e6;
+    --ow-cream-2:      #fbf6ec;
+    --ow-paper:        #ffffff;
+    --ow-ink:          #2d2418;
+    --ow-ink-soft:     #6b5d4a;
+    --ow-ink-faint:    #9a8d77;
+    --ow-navy:         #0c3a4a;
+    --ow-navy-soft:    #1a5468;
+    --ow-gold:         #c9a87c;
+    --ow-gold-soft:    #e8dec4;
+    --ow-rose:         #ab4232;
+    --ow-line:         #e8dec4;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  h1, h2, h3, h4 { margin: 0; font-family: 'Crimson Pro', Georgia, serif; font-weight: 600; line-height: 1.1; letter-spacing: -0.5px; }
+  p { margin: 0; }
+
+  /* Container scales fluidly across screen sizes:
+       - phones / small tablets (≤520px viewport): full-width, just 28px gutters
+       - laptops (520-1280px): grows up to ~1140px content width
+       - wide monitors (1280-1920px): grows up to ~1400px
+       - ultrawide / iMac / 4K (1920px+): caps at 1560px
+     The clamp() floor uses 90vw so on awkward narrow widths the container
+     never feels cramped. The ceiling uses 1560px so text never becomes
+     too wide to read comfortably (research suggests ~75 characters max per
+     line, which 1560px with our font sizes respects). */
+  .container {
+    width: 100%;
+    max-width: clamp(320px, 92vw, 1560px);
+    margin: 0 auto;
+    padding: 0 clamp(20px, 3vw, 40px);
+  }
+
+  /* ─── Topbar ─── */
+  .ow-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(247, 241, 230, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--ow-gold-soft);
+  }
+  .ow-topbar .row {
+    display: flex;
+    align-items: center;
+    padding: 14px 0;
+    gap: 24px;
+  }
+  .ow-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .ow-logo-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ow-gold) 0%, var(--ow-navy) 100%);
+    flex-shrink: 0;
+  }
+  .ow-logo-text {
+    font-size: 13px;
+    letter-spacing: 5px;
+    font-weight: 700;
+    color: var(--ow-navy);
+  }
+  .ow-nav {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    font-size: 14px;
+    color: var(--ow-ink-soft);
+  }
+  .ow-nav a:hover { color: var(--ow-navy); }
+  .ow-cta {
+    background: var(--ow-navy);
+    color: #fff;
+    padding: 9px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background 0.15s;
+    border: 0;
+    cursor: pointer;
+  }
+  .ow-cta:hover { background: var(--ow-navy-soft); }
+
+  /* ─── Hero ─── */
+  .ow-hero {
+    position: relative;
+    overflow: hidden;
+    padding: 90px 0 80px;
+  }
+  .ow-hero::before {
+    content: '';
+    position: absolute;
+    top: -120px;
+    right: -120px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(255, 200, 150, 0.45) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .ow-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -200px;
+    left: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(201, 168, 124, 0.2) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .ow-hero .container { position: relative; z-index: 1; }
+  .ow-hero .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--ow-gold-soft);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: var(--ow-navy);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .ow-hero .eyebrow .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ow-rose);
+  }
+  .ow-hero h1 {
+    font-size: clamp(40px, 7vw, 78px);
+    color: var(--ow-ink);
+    margin-bottom: 22px;
+    max-width: 920px;
+  }
+  .ow-hero h1 em {
+    font-style: italic;
+    color: var(--ow-navy);
+    font-weight: 600;
+  }
+  .ow-hero .sub {
+    font-size: clamp(17px, 1.5vw, 20px);
+    color: var(--ow-ink-soft);
+    max-width: 640px;
+    line-height: 1.55;
+    margin-bottom: 36px;
+  }
+  .ow-hero .actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .ow-hero .actions .ow-cta {
+    padding: 14px 28px;
+    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ow-hero .actions .secondary {
+    color: var(--ow-navy);
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 1.5px solid var(--ow-navy);
+    padding-bottom: 1px;
+    cursor: pointer;
+  }
+  .ow-hero .actions .free-tag {
+    color: var(--ow-ink-faint);
+    font-size: 13px;
+    font-style: italic;
+  }
+
+  /* ─── Trust strip ─── */
+  .ow-trust {
+    padding: 36px 0;
+    border-top: 1px solid var(--ow-gold-soft);
+    border-bottom: 1px solid var(--ow-gold-soft);
+    background: rgba(255, 255, 255, 0.35);
+  }
+  .ow-trust .row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    text-align: center;
+  }
+  .ow-trust .stat .num {
+    font-family: 'Crimson Pro', serif;
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--ow-navy);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .ow-trust .stat .lbl {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ow-ink-faint);
+    font-weight: 600;
+  }
+
+  /* ─── Section base ─── */
+  .ow-section { padding: 90px 0; }
+  .ow-section .section-eyebrow {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--ow-rose);
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .ow-section .section-title {
+    font-size: clamp(32px, 4vw, 48px);
+    color: var(--ow-ink);
+    margin-bottom: 14px;
+    max-width: 700px;
+  }
+  .ow-section .section-title em { font-style: italic; color: var(--ow-navy); }
+  .ow-section .section-sub {
+    font-size: 17px;
+    color: var(--ow-ink-soft);
+    max-width: 620px;
+    line-height: 1.55;
+    margin-bottom: 50px;
+  }
+
+  /* ─── Products grid ─── */
+  #products { background: rgba(255, 255, 255, 0.5); }
+  .ow-products-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px;
+  }
+  .ow-product-card {
+    background: var(--ow-paper);
+    border: 1px solid var(--ow-line);
+    border-top: 4px solid var(--ow-gold);
+    padding: 32px;
+    border-radius: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+  }
+  .ow-product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 36px rgba(45, 36, 24, 0.08);
+  }
+  .ow-product-card .pc-tag {
+    color: var(--ow-gold);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .ow-product-card h3 {
+    font-size: 30px;
+    margin-bottom: 12px;
+    color: var(--ow-navy);
+  }
+  .ow-product-card .pc-pitch {
+    font-size: 15px;
+    color: var(--ow-ink);
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 14px;
+  }
+  .ow-product-card .pc-body {
+    font-size: 14px;
+    color: var(--ow-ink-soft);
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+  .ow-product-card .pc-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 22px;
+  }
+  .ow-product-card .pc-features li {
+    font-size: 13px;
+    color: var(--ow-ink-soft);
+    padding: 4px 0 4px 22px;
+    position: relative;
+  }
+  .ow-product-card .pc-features li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--ow-gold);
+    font-weight: 700;
+  }
+  .ow-product-card .pc-cta {
+    margin-top: auto;
+    color: var(--ow-navy);
+    font-size: 14px;
+    font-weight: 700;
+    border-bottom: 1.5px solid var(--ow-navy);
+    padding-bottom: 2px;
+    display: inline-block;
+    align-self: flex-start;
+  }
+  .ow-product-card .pc-cta:hover { color: var(--ow-rose); border-color: var(--ow-rose); }
+  .ow-product-card .pc-region {
+    font-size: 11px;
+    color: var(--ow-ink-faint);
+    font-style: italic;
+    margin-top: 8px;
+  }
+
+  /* ─── Why OneWindow features ─── */
+  .ow-why-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+  }
+  .ow-why-card {
+    background: var(--ow-paper);
+    border: 1px solid var(--ow-line);
+    padding: 28px;
+    border-radius: 8px;
+  }
+  .ow-why-card .icon {
+    width: 44px;
+    height: 44px;
+    background: var(--ow-cream);
+    border: 1px solid var(--ow-gold-soft);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 14px;
+  }
+  .ow-why-card h3 {
+    font-size: 22px;
+    color: var(--ow-navy);
+    margin-bottom: 8px;
+  }
+  .ow-why-card p {
+    font-size: 14px;
+    color: var(--ow-ink-soft);
+    line-height: 1.6;
+  }
+
+  /* ─── Testimonials ─── */
+  #voices { background: rgba(255, 255, 255, 0.5); }
+  .ow-testimonials {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .ow-testimonial {
+    background: var(--ow-paper);
+    border: 1px solid var(--ow-line);
+    padding: 28px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .ow-testimonial::before {
+    content: '\201C';
+    position: absolute;
+    top: 12px;
+    right: 22px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 64px;
+    color: var(--ow-gold-soft);
+    line-height: 1;
+  }
+  .ow-testimonial .quote {
+    font-family: 'Crimson Pro', serif;
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--ow-ink);
+    font-style: italic;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+  }
+  .ow-testimonial .author {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--ow-line);
+  }
+  .ow-testimonial .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ow-gold), var(--ow-navy));
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+  }
+  .ow-testimonial .name {
+    font-weight: 700;
+    color: var(--ow-ink);
+    font-size: 14px;
+  }
+  .ow-testimonial .role {
+    font-size: 12px;
+    color: var(--ow-ink-faint);
+  }
+  .ow-testimonial-note {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 12px;
+    color: var(--ow-ink-faint);
+    font-style: italic;
+  }
+
+  /* ─── Final CTA band ─── */
+  .ow-final-cta {
+    background: var(--ow-navy);
+    color: #fff;
+    padding: 80px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .ow-final-cta::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    right: -100px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(201, 168, 124, 0.18) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .ow-final-cta .container { position: relative; z-index: 1; text-align: center; }
+  .ow-final-cta h2 {
+    font-size: clamp(32px, 4.5vw, 52px);
+    margin-bottom: 16px;
+    color: #fff;
+  }
+  .ow-final-cta h2 em { font-style: italic; color: var(--ow-gold); }
+  .ow-final-cta p {
+    font-size: 17px;
+    color: rgba(255, 255, 255, 0.78);
+    max-width: 580px;
+    margin: 0 auto 32px;
+    line-height: 1.55;
+  }
+  .ow-final-cta .actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .ow-final-cta .ow-cta {
+    background: var(--ow-gold);
+    color: var(--ow-navy);
+    padding: 14px 32px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .ow-final-cta .ow-cta:hover { background: #d6b894; }
+
+  /* ─── Footer ─── */
+  .ow-footer {
+    background: var(--ow-cream-2);
+    padding: 60px 0 30px;
+    border-top: 1px solid var(--ow-line);
+  }
+  .ow-footer .top {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
+  }
+  .ow-footer .brand-block {
+    max-width: 320px;
+  }
+  .ow-footer .brand-block .blurb {
+    font-size: 13px;
+    color: var(--ow-ink-soft);
+    line-height: 1.6;
+    margin-top: 12px;
+  }
+  .ow-footer .col-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ow-rose);
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .ow-footer ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .ow-footer ul li {
+    margin-bottom: 8px;
+  }
+  .ow-footer ul a {
+    font-size: 13px;
+    color: var(--ow-ink-soft);
+  }
+  .ow-footer ul a:hover { color: var(--ow-navy); }
+  .ow-footer .bottom {
+    padding-top: 22px;
+    border-top: 1px solid var(--ow-line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--ow-ink-faint);
+  }
+
+  /* ─── Mobile ─── */
+  @media (max-width: 900px) {
+    .ow-hero { padding: 60px 0; }
+    .ow-section { padding: 60px 0; }
+    .ow-trust .row { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+    .ow-products-grid { grid-template-columns: 1fr; }
+    .ow-why-grid { grid-template-columns: 1fr; }
+    .ow-testimonials { grid-template-columns: 1fr; }
+    .ow-footer .top { grid-template-columns: 1fr 1fr; gap: 28px; }
+    .ow-nav { gap: 14px; font-size: 13px; }
+    .ow-nav .nav-link { display: none; }
+  }
+  @media (max-width: 540px) {
+    .ow-footer .top { grid-template-columns: 1fr; }
+    .ow-footer .bottom { flex-direction: column; gap: 8px; text-align: center; }
+  }
+
+
+  /* ─── "What's free" section ───
+     Sits between Products and Why OneWindow. Three offer cards:
+     Setup advisory (free forever), NIMBY (3 months free), HR (3 months
+     free). Each card has a clear "what's free / what's not" structure
+     so visitors can't claim ambiguity later. */
+  .ow-free-section {
+    background: var(--ow-navy);
+    color: #fff;
+    padding: 90px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .ow-free-section::before {
+    content: '';
+    position: absolute;
+    top: -150px;
+    right: -150px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(201, 168, 124, 0.18) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .ow-free-section::after {
+    content: '';
+    position: absolute;
+    bottom: -150px;
+    left: -150px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(255, 200, 150, 0.1) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .ow-free-section .container { position: relative; z-index: 1; }
+  .ow-free-section .section-eyebrow { color: var(--ow-gold); }
+  .ow-free-section .section-title { color: #fff; }
+  .ow-free-section .section-title em { color: var(--ow-gold); }
+  .ow-free-section .section-sub { color: rgba(255, 255, 255, 0.75); }
+  .ow-free-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+  .ow-free-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(201, 168, 124, 0.3);
+    border-radius: 8px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: transform 0.2s, border-color 0.2s, background 0.2s;
+  }
+  .ow-free-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--ow-gold);
+    background: rgba(255, 255, 255, 0.09);
+  }
+  .ow-free-card .fc-price {
+    color: var(--ow-gold);
+    font-family: 'Crimson Pro', serif;
+    font-size: 48px;
+    font-weight: 600;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .ow-free-card .fc-period {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+    margin-bottom: 18px;
+  }
+  .ow-free-card h3 {
+    font-size: 22px;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+  .ow-free-card .fc-pitch {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+  .ow-free-card .fc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 22px;
+  }
+  .ow-free-card .fc-list li {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.85);
+    padding: 6px 0 6px 22px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .ow-free-card .fc-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--ow-gold);
+    font-weight: 700;
+  }
+  .ow-free-card .fc-after {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+    font-style: italic;
+    line-height: 1.5;
+  }
+  .ow-free-fine-print {
+    margin-top: 30px;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+  }
+  @media (max-width: 900px) {
+    .ow-free-section { padding: 60px 0; }
+    .ow-free-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ──────────────────────────────────────────────────────────────
+     ROTATOR + MARQUEE + BRAND UPGRADE  (added in this revision)
+     ────────────────────────────────────────────────────────────── */
+
+  /* ─ Marquee strip (replaces the old top banner) ─
+     Sits at the very top of the page. Continuous scrolling offers
+     including FREE pills for SECP, FBR, NIMBY, HR + testimonials.
+     Pauses on hover so users can read whichever item caught their eye. */
+  .ow-marquee {
+    background: var(--ow-navy);
+    color: #fff;
+    overflow: hidden;
+    padding: 11px 0;
+    font-size: 13px;
+    position: relative;
+  }
+  .ow-marquee::before, .ow-marquee::after {
+    /* edge fades so scrolling items don't pop in/out abruptly */
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 40px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .ow-marquee::before {
+    left: 0;
+    background: linear-gradient(90deg, var(--ow-navy), transparent);
+  }
+  .ow-marquee::after {
+    right: 0;
+    background: linear-gradient(270deg, var(--ow-navy), transparent);
+  }
+  .ow-marquee-inner {
+    display: inline-flex;
+    gap: 40px;
+    white-space: nowrap;
+    animation: ow-scroll 38s linear infinite;
+    padding-left: 100%;
+  }
+  .ow-marquee:hover .ow-marquee-inner { animation-play-state: paused; }
+  .ow-marquee-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ow-marquee-item .pill {
+    background: var(--ow-gold);
+    color: var(--ow-navy);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .ow-marquee-item strong { color: var(--ow-gold); }
+  .ow-marquee-item .sep { color: rgba(255,255,255,0.3); margin: 0 6px; }
+  @keyframes ow-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-100%); }
+  }
+
+  /* ─ Brand upgrade: larger topbar lockup ─ */
+  .ow-topbar .ow-logo-mark {
+    width: 38px;
+    height: 38px;
+    box-shadow: 0 4px 12px rgba(12, 58, 74, 0.18);
+  }
+  .ow-topbar .ow-logo-text {
+    font-size: 16px;
+    letter-spacing: 6px;
+    font-weight: 800;
+  }
+  .ow-topbar .brand-tag {
+    /* tiny tagline next to the wordmark — anchors brand identity */
+    display: block;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 11px;
+    letter-spacing: 0;
+    color: var(--ow-ink-faint);
+    font-weight: 400;
+    margin-top: 1px;
+  }
+  .ow-logo-stack {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+  }
+
+  /* ─ Rotating hero ─ */
+  .ow-hero-rotator {
+    position: relative;
+    min-height: 380px;
+  }
+  .ow-hero-viewport {
+    position: relative;
+    min-height: 320px;
+  }
+  .ow-hero-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    pointer-events: none;
+  }
+  .ow-hero-slide.is-active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .ow-hero-slide .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--ow-gold-soft);
+    padding: 7px 16px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--ow-rose);
+    text-transform: uppercase;
+    margin-bottom: 22px;
+  }
+  .ow-hero-slide .eyebrow .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ow-rose);
+    animation: ow-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes ow-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.75); }
+  }
+  .ow-hero-slide h1 {
+    font-size: clamp(40px, 6.5vw, 72px);
+    color: var(--ow-ink);
+    margin-bottom: 20px;
+    max-width: 920px;
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.5px;
+  }
+  .ow-hero-slide h1 em {
+    font-style: italic;
+    color: var(--ow-navy);
+  }
+  .ow-hero-slide .sub {
+    font-size: clamp(16px, 1.4vw, 19px);
+    color: var(--ow-ink-soft);
+    max-width: 620px;
+    line-height: 1.55;
+    margin-bottom: 32px;
+  }
+  /* Strong tags inside hero sub get the brand navy and a slightly heavier
+     weight, so key claims ("free", "pay only when running") catch the eye
+     without yelling. The surrounding muted prose makes them pop just enough. */
+  .ow-hero-slide .sub strong {
+    color: var(--ow-navy);
+    font-weight: 700;
+  }
+  .ow-hero-slide .actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .ow-hero-slide .actions .ow-cta {
+    padding: 14px 28px;
+    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ow-hero-slide .actions .secondary {
+    color: var(--ow-navy);
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 1.5px solid var(--ow-navy);
+    padding-bottom: 1px;
+    cursor: pointer;
+  }
+  /* Special treatment for testimonial slide — italic serif quote feel */
+  .ow-hero-slide.is-testimonial h1 {
+    font-style: italic;
+    font-size: clamp(34px, 5vw, 56px);
+    color: var(--ow-navy);
+  }
+  .ow-hero-slide.is-testimonial h1::before,
+  .ow-hero-slide.is-testimonial h1::after {
+    content: '\201C';
+    color: var(--ow-gold);
+    margin: 0 4px;
+  }
+  .ow-hero-slide.is-testimonial h1::after { content: '\201D'; }
+  .ow-hero-slide.is-testimonial .author {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .ow-hero-slide.is-testimonial .author .avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ow-gold), var(--ow-navy));
+    color: #fff;
+    font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .ow-hero-slide.is-testimonial .author .name {
+    font-weight: 700;
+    color: var(--ow-ink);
+    font-size: 14px;
+  }
+  .ow-hero-slide.is-testimonial .author .role {
+    font-size: 12px;
+    color: var(--ow-ink-faint);
+  }
+
+  /* ─ Dot controls under the rotator ─ */
+  .ow-hero-dots {
+    display: flex;
+    gap: 8px;
+    margin-top: 28px;
+    position: relative;
+    z-index: 2;
+  }
+  .ow-hero-dots button {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: rgba(12, 58, 74, 0.25);
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    transition: width 0.3s, background 0.3s;
+  }
+  .ow-hero-dots button:hover { background: rgba(12, 58, 74, 0.45); }
+  .ow-hero-dots button.is-active {
+    background: var(--ow-navy);
+    width: 28px;
+    border-radius: 5px;
+  }
+  /* Progress ring inside the active dot — a thin amber stroke that
+     fills as the slide approaches its rotation. Visual feedback so
+     users know when the next slide is coming. */
+  .ow-hero-dots button.is-active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  /* ─ "What is OneWindow" beat ─
+     A single confident sentence under the hero that anchors what
+     this site actually is. Plain text, generous size. */
+  .ow-anchor-beat {
+    background: rgba(255, 255, 255, 0.4);
+    border-top: 1px solid var(--ow-gold-soft);
+    border-bottom: 1px solid var(--ow-gold-soft);
+    padding: 22px 0;
+    text-align: center;
+  }
+  .ow-anchor-beat .container {
+    font-family: 'Crimson Pro', serif;
+    font-size: 17px;
+    color: var(--ow-ink-soft);
+    font-style: italic;
+    line-height: 1.5;
+  }
+  .ow-anchor-beat .container strong {
+    color: var(--ow-navy);
+    font-style: normal;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+  }
+
+  /* ─ Reduced motion / mobile ─ */
+  @media (prefers-reduced-motion: reduce) {
+    .ow-marquee-inner { animation: none; padding-left: 0; }
+    .ow-hero-slide { transition: none; }
+    .ow-hero-slide .eyebrow .live-dot { animation: none; }
+  }
+  @media (max-width: 900px) {
+    .ow-marquee { font-size: 12px; }
+    .ow-hero-rotator { min-height: 320px; }
+    .ow-hero-viewport { min-height: 280px; }
+    .ow-topbar .brand-tag { display: none; }
+    .ow-topbar .ow-logo-text { font-size: 14px; letter-spacing: 4px; }
+  }
+
+  /* ─ Slide 1 umbrella — cycling role headline ─
+     A single h1 with two parts: the role noun ("Your accountant.") cycles
+     every 3 sec, and the anchor phrase ("in one window.") stays put. Each
+     role fades up + holds + fades out before the next takes its place. */
+  .ow-roles-stack {
+    position: relative;
+    display: inline-block;
+    height: 1.05em;
+    min-width: 200px;
+    vertical-align: top;
+    overflow: visible;
+  }
+  .ow-role {
+    position: absolute;
+    top: 0;
+    left: 0;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.55s ease, transform 0.55s ease;
+    font-style: italic;
+    color: var(--ow-navy);
+    line-height: 1.05;
+  }
+  .ow-role.is-active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  /* The "in one window." anchor — sits on its own line beneath the
+     cycling roles so the page doesn't feel jumpy. */
+  .ow-anchor-phrase {
+    display: block;
+    color: var(--ow-ink);
+    margin-top: 6px;
+  }
+  /* Slide 1's h1 needs to be slightly smaller than the regular slide h1
+     because of the two-line layout (role line + anchor line). */
+  .ow-hero-slide.is-umbrella h1 {
+    font-size: clamp(36px, 5.5vw, 64px);
+    line-height: 1.08;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ow-role { transition: none; }
+  }  /* ─── Ambient fills for wide screens ───
+     When the viewport is wider than the content (laptops are fine, but
+     27" iMacs, Studio Displays, and 4K monitors have a lot of cream
+     space outside the content). Add subtle decorative glows in those
+     side gutters so the page reads as "intentional" rather than "empty
+     with content floating in the middle." Glows are below the content
+     z-stack and very faint — they fill the void without competing for
+     attention. */
+  @media (min-width: 1500px) {
+    /* Body becomes the canvas. Use ::before/::after to drop two large
+       soft glows on the left and right gutters. */
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      width: 28vw;
+      pointer-events: none;
+      z-index: -1;
+      opacity: 0.6;
+    }
+    body::before {
+      left: 0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(201, 168, 124, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 30% 80%, rgba(255, 200, 150, 0.1) 0%, transparent 50%);
+    }
+    body::after {
+      right: 0;
+      background:
+        radial-gradient(circle at 80% 30%, rgba(255, 200, 150, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 70% 75%, rgba(201, 168, 124, 0.1) 0%, transparent 50%);
+    }
+  }
+  /* Even wider — bigger glows so they remain proportional to canvas */
+  @media (min-width: 2200px) {
+    body::before, body::after { width: 32vw; opacity: 0.7; }
+  }
+  /* Hero glows scale up on wide screens so the sunset isn't relegated
+     to a small corner on iMacs. */
+  @media (min-width: 1500px) {
+    .ow-hero::before {
+      width: 800px;
+      height: 800px;
+      top: -180px;
+      right: -180px;
+    }
+    .ow-hero::after {
+      width: 600px;
+      height: 600px;
+    }
+  }
+
+  /* ─── Fluid scale for hero headlines on wide screens ───
+     The clamp() values inside the hero h1 already top out around 72px.
+     On a 27" iMac that's fine but feels conservative. Bump the ceiling
+     a notch so the umbrella claim has real visual weight on big canvases.
+     We don't touch mobile/laptop sizing — only the top of the clamp. */
+  @media (min-width: 1500px) {
+    .ow-hero-slide h1 {
+      font-size: clamp(40px, 5.5vw, 88px);
+    }
+    .ow-hero-slide.is-umbrella h1 {
+      font-size: clamp(36px, 5vw, 80px);
+    }
+    .ow-section .section-title {
+      font-size: clamp(32px, 3.5vw, 60px);
+    }
+    .ow-final-cta h2 {
+      font-size: clamp(32px, 4vw, 64px);
+    }
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ TOP MARQUEE ═══════════════════════ -->
+<div class="ow-marquee" aria-hidden="false">
+  <div class="ow-marquee-inner">
+    <!-- We render the same item list twice so the loop reads as
+         seamless. Browsers don't repeat the strip natively — the
+         CSS keyframe scrolls 100% and snaps back, so duplicating
+         masks the snap. -->
+    <span class="ow-marquee-item"><span class="pill">FREE</span><strong>SECP registration</strong> — incorporate your business at no cost</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">FREE</span><strong>FBR compliance</strong> — NTN, sales tax, IRIS, first return filing</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">3 MONTHS</span><strong>NIMBY Accounting</strong> — on the house</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">3 MONTHS</span><strong>NorthNext HR</strong> — free for your whole team</span><span class="sep">·</span>
+    <span class="ow-marquee-item">⭐ ⭐ ⭐ ⭐ ⭐ &nbsp; <strong>"A day saved every week"</strong> — Sarah K., Finance Director</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">NEW</span><strong>Register, run, relax</strong> — everything you need to start</span><span class="sep">·</span>
+    <!-- Duplicate set for seamless loop -->
+    <span class="ow-marquee-item"><span class="pill">FREE</span><strong>SECP registration</strong> — incorporate your business at no cost</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">FREE</span><strong>FBR compliance</strong> — NTN, sales tax, IRIS, first return filing</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">3 MONTHS</span><strong>NIMBY Accounting</strong> — on the house</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">3 MONTHS</span><strong>NorthNext HR</strong> — free for your whole team</span><span class="sep">·</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════ TOPBAR ═══════════════════════ -->
+<header class="ow-topbar">
+  <div class="container row">
+    <a href="#top" class="ow-logo">
+      <div class="ow-logo-mark"></div>
+      <div class="ow-logo-stack">
+        <div class="ow-logo-text">ONEWINDOW</div>
+        <div class="brand-tag">your business, simplified.</div>
+      </div>
+    </a>
+    <nav class="ow-nav">
+      <a href="#whats-free" class="nav-link">What's free</a>
+      <a href="#products" class="nav-link">Products</a>
+      <a href="#why" class="nav-link">Why OneWindow</a>
+      <a href="#voices" class="nav-link">Voices</a>
+      <a href="#contact" class="nav-link">Contact</a>
+      <a href="#whats-free" class="ow-cta">Get started free</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ═══════════════════════ HERO (ROTATING) ═══════════════════════ -->
+<section class="ow-hero" id="top">
+  <div class="container">
+    <div class="ow-hero-rotator" id="hero-rotator">
+      <div class="ow-hero-viewport" id="hero-viewport">
+
+        <!-- Slide 1: UMBRELLA (cycling role headline) -->
+        <!-- This is the first thing every visitor sees. Holds for 30s
+             so visitors have ample time to read the value proposition.
+             The role headline cycles every 3s — over 30s it cycles
+             through all 4 roles 2.5 times, which is fine: visitors who
+             stay see the full set; visitors who leave still got the
+             pitch. Marquee at the top keeps moving so the page never
+             reads as "static" during the 30-second dwell. -->
+        <div class="ow-hero-slide is-active is-umbrella" data-duration="30000">
+          <div class="eyebrow"><span class="live-dot"></span> The unified business portal</div>
+          <h1>
+            <span class="ow-roles-stack" id="ow-roles">
+              <span class="ow-role is-active">Your accountant.</span>
+              <span class="ow-role">Your HR head.</span>
+              <span class="ow-role">Your analyst.</span>
+              <span class="ow-role">Your ops team.</span>
+            </span>
+            <span class="ow-anchor-phrase">In one window.</span>
+          </h1>
+          <p class="sub">Register your business <strong>free</strong>. Get <strong>free business setup advisory</strong>. Run your books and your team on us for the first 90 days. <strong>Pay only when you're really running</strong> — when the business is earning and the tools are earning their keep.</p>
+          <div class="actions">
+            <a href="#products" class="ow-cta">Explore the products →</a>
+            <a href="#whats-free" class="secondary">See what's free</a>
+          </div>
+        </div>
+
+        <!-- Slide 2: SECP registration -->
+        <div class="ow-hero-slide" data-duration="6500">
+          <div class="eyebrow"><span class="live-dot"></span> Free SECP registration</div>
+          <h1>Register your business <em>for free.</em></h1>
+          <p class="sub">Full SECP company registration at no cost. Get incorporated and start running your business — no lawyer fees, no hidden charges. Just bring your business plan.</p>
+          <div class="actions">
+            <a href="#contact" class="ow-cta">Start registration →</a>
+            <a href="#whats-free" class="secondary">See what else is free</a>
+          </div>
+        </div>
+
+        <!-- Slide 3: FBR compliance -->
+        <div class="ow-hero-slide" data-duration="6500">
+          <div class="eyebrow"><span class="live-dot"></span> Free FBR compliance</div>
+          <h1>FBR setup, <em>done for you.</em></h1>
+          <p class="sub">NTN, sales tax registration, IRIS account, and your first return filing — all included free with OneWindow. Stop chasing your accountant. Start your business properly.</p>
+          <div class="actions">
+            <a href="#contact" class="ow-cta">Get FBR-ready →</a>
+            <a href="#whats-free" class="secondary">See what else is free</a>
+          </div>
+        </div>
+
+        <!-- Slide 4: NIMBY -->
+        <div class="ow-hero-slide" data-duration="6500">
+          <div class="eyebrow"><span class="live-dot"></span> 3 months free</div>
+          <h1>NIMBY accounting, <em>on the house.</em></h1>
+          <p class="sub">Multi-company cloud accounting free for your first 90 days. Unlimited transactions, branded invoices, full data export. No card required up front.</p>
+          <div class="actions">
+            <a href="https://accnimby.com" target="_blank" rel="noopener" class="ow-cta">Try NIMBY free →</a>
+            <a href="#products" class="secondary">See all products</a>
+          </div>
+        </div>
+
+        <!-- Slide 5: HR -->
+        <div class="ow-hero-slide" data-duration="6500">
+          <div class="eyebrow"><span class="live-dot"></span> 3 months free</div>
+          <h1>Manage your team, <em>at no cost.</em></h1>
+          <p class="sub">NorthNext HR free for 90 days. Attendance, leave, tasks, and a searchable policy library — for your whole team. Cancel anytime.</p>
+          <div class="actions">
+            <a href="https://hr.northnextventures.com" target="_blank" rel="noopener" class="ow-cta">Set up HR free →</a>
+            <a href="#products" class="secondary">See all products</a>
+          </div>
+        </div>
+
+        <!-- Slide 6: Testimonial -->
+        <!-- REPLACE: with a real customer quote when available -->
+        <div class="ow-hero-slide is-testimonial" data-duration="7500">
+          <div class="eyebrow">★ ★ ★ ★ ★ &nbsp; Customer story</div>
+          <h1>Saved us a day of accountant fees every single week.</h1>
+          <div class="author">
+            <div class="avatar">SK</div>
+            <div>
+              <div class="name">Sarah K.</div>
+              <div class="role">Finance Director · Mid-sized retailer</div>
+            </div>
+          </div>
+          <div class="actions">
+            <a href="#voices" class="ow-cta">Read more stories →</a>
+          </div>
+        </div>
+
+      </div>
+      <div class="ow-hero-dots" id="hero-dots"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ "What is OneWindow?" anchor beat ═══════════════ -->
+<section class="ow-anchor-beat">
+  <div class="container">
+    <strong>ONEWINDOW</strong> &nbsp; is the unified portal to NorthNext Ventures&apos; suite of business software — accounting, analytics, HR, and operations. Built in Pakistan, used everywhere.
+  </div>
+</section>
+
+<!-- ═══════════════════════ TRUST STRIP ═══════════════════════ -->
+<section class="ow-trust">
+  <div class="container">
+    <div class="row">
+      <!-- REPLACE: swap these stats with real ones as you grow -->
+      <div class="stat">
+        <div class="num">4</div>
+        <div class="lbl">Products in the suite</div>
+      </div>
+      <div class="stat">
+        <div class="num">PKR 500M+</div>
+        <div class="lbl">Transactions tracked</div>
+      </div>
+      <div class="stat">
+        <div class="num">75+</div>
+        <div class="lbl">Locations supported</div>
+      </div>
+      <div class="stat">
+        <div class="num">24/7</div>
+        <div class="lbl">Cloud uptime</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ PRODUCTS ═══════════════════════ -->
+<section class="ow-section" id="products">
+  <div class="container">
+    <div class="section-eyebrow">Our products</div>
+    <h2 class="section-title">Four tools, built to <em>work together.</em></h2>
+    <p class="section-sub">Each product solves a real problem on its own. Together, they make the daily operations of a modern business effortless.</p>
+
+    <div class="ow-products-grid">
+
+      <!-- ───── NIMBY Accounting ───── -->
+      <div class="ow-product-card">
+        <div class="pc-tag">Accounting</div>
+        <h3>NIMBY</h3>
+        <p class="pc-pitch">Cloud accounting that finally feels modern.</p>
+        <p class="pc-body">Multi-company books, invoicing, bills, GL, and reports — all in one place. Designed for the workflows accountants and business owners actually use.</p>
+        <ul class="pc-features">
+          <li>Multi-company support out of the box</li>
+          <li>Branded invoices with PDF export</li>
+          <li>Built-in role-based permissions</li>
+          <li>Free to start</li>
+        </ul>
+        <a href="https://accnimby.com" target="_blank" rel="noopener" class="pc-cta">Open NIMBY →</a>
+      </div>
+
+      <!-- ───── Pulse NIMBY ───── -->
+      <div class="ow-product-card">
+        <div class="pc-tag">Financial Analytics</div>
+        <h3>Pulse</h3>
+        <p class="pc-pitch">Financial intelligence, the moment you need it.</p>
+        <p class="pc-body">Real-time P&amp;L, balance sheets, and benchmarking dashboards built for fuel retail and convenience operators. Drill from a number to the transaction in seconds.</p>
+        <ul class="pc-features">
+          <li>Drill-down GL with full audit trail</li>
+          <li>Multi-store consolidation</li>
+          <li>Year-over-year and daily comparisons</li>
+          <li>Anomaly detection on key metrics</li>
+        </ul>
+        <a href="https://pulse.nimbyconsultants.com" target="_blank" rel="noopener" class="pc-cta">Open Pulse →</a>
+      </div>
+
+      <!-- ───── NorthNext HR ───── -->
+      <div class="ow-product-card">
+        <div class="pc-tag">Human Resources</div>
+        <h3>NorthNext HR</h3>
+        <p class="pc-pitch">Your team's daily heartbeat.</p>
+        <p class="pc-body">Attendance, leave, task management, and a searchable policy library. The kind of HR tool small teams actually use because it gets out of their way.</p>
+        <ul class="pc-features">
+          <li>One-tap clock-in for employees</li>
+          <li>Task discussions and deadline tracking</li>
+          <li>Policy library with PDF search</li>
+          <li>Overnight shift support</li>
+        </ul>
+        <a href="https://hr.northnextventures.com" target="_blank" rel="noopener" class="pc-cta">Open HR →</a>
+      </div>
+
+      <!-- ───── Curator ───── -->
+      <div class="ow-product-card">
+        <div class="pc-tag">Pipeline &amp; Operations</div>
+        <h3>Curator</h3>
+        <p class="pc-pitch">From idea to execution, in one workspace.</p>
+        <p class="pc-body">Internal pipeline tooling for content workflows and startup operations. Track what's in motion, what's blocked, and what's shipping.</p>
+        <ul class="pc-features">
+          <li>Kanban and timeline views</li>
+          <li>Built-in collaboration and comments</li>
+          <li>Workflow templates</li>
+          <li>Integrates with NIMBY data</li>
+        </ul>
+        <a href="#contact" class="pc-cta">Request access →</a>
+        <p class="pc-region">Currently available to Pakistani teams only.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ WHAT'S FREE ═══════════════════════ -->
+<section class="ow-free-section" id="whats-free">
+  <div class="container">
+    <div class="section-eyebrow">Start free</div>
+    <h2 class="section-title">Three things <em>on the house.</em></h2>
+    <p class="section-sub">No tricks, no card required. We make money when you stick with us, so we'd rather help you get up and running first.</p>
+
+    <div class="ow-free-grid">
+
+      <!-- Card 1: Setup advisory — free forever -->
+      <div class="ow-free-card">
+        <div class="fc-price">Free</div>
+        <div class="fc-period">Always</div>
+        <h3>Business setup advisory</h3>
+        <p class="fc-pitch">A working session with a chartered accountant to set up your books, chart of accounts, and workflows the right way the first time.</p>
+        <ul class="fc-list">
+          <li>One-hour video call with a CA</li>
+          <li>Chart of accounts tailored to your business</li>
+          <li>Tax setup for your jurisdiction</li>
+          <li>Migration plan if you're moving from another tool</li>
+        </ul>
+        <div class="fc-after">No catch. Even if you never become a paying customer, the advisory is yours.</div>
+      </div>
+
+      <!-- Card 2: NIMBY accounting — 3 months free -->
+      <div class="ow-free-card">
+        <div class="fc-price">3 months</div>
+        <div class="fc-period">On the house</div>
+        <h3>NIMBY Accounting</h3>
+        <p class="fc-pitch">Full access to multi-company cloud accounting for your first 90 days. Invoicing, bills, GL, reports — everything unlocked.</p>
+        <ul class="fc-list">
+          <li>Unlimited transactions during the free period</li>
+          <li>All companies, all users included</li>
+          <li>PDF invoices with your branding</li>
+          <li>Full data export anytime — no lock-in</li>
+        </ul>
+        <div class="fc-after">After 3 months: continue on a paid plan or downgrade to our free tier. Your data stays.</div>
+      </div>
+
+      <!-- Card 3: NorthNext HR — 3 months free -->
+      <div class="ow-free-card">
+        <div class="fc-price">3 months</div>
+        <div class="fc-period">On the house</div>
+        <h3>NorthNext HR</h3>
+        <p class="fc-pitch">Attendance, leave, tasks, and a searchable policy library — free for your team for the first 90 days.</p>
+        <ul class="fc-list">
+          <li>Unlimited employees during the free period</li>
+          <li>Mobile clock-in for the whole team</li>
+          <li>Policy library with PDF search</li>
+          <li>Task management with deadline tracking</li>
+        </ul>
+        <div class="fc-after">After 3 months: continue on a paid plan. Cancel anytime. We'll never auto-charge without warning.</div>
+      </div>
+
+    </div>
+
+    <p class="ow-free-fine-print">Pulse Analytics is priced per location after a free 14-day trial. Curator is on invitation only.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════ WHY ONEWINDOW ═══════════════════════ -->
+<section class="ow-section" id="why">
+  <div class="container">
+    <div class="section-eyebrow">Why OneWindow</div>
+    <h2 class="section-title">Built by operators, for <em>operators.</em></h2>
+    <p class="section-sub">We use these tools every day to run our own businesses. That's how we know what matters.</p>
+
+    <div class="ow-why-grid">
+
+      <div class="ow-why-card">
+        <div class="icon">🪟</div>
+        <h3>One window, every tool</h3>
+        <p>Stop hunting through browser tabs. Sign in once at OneWindow and jump between accounting, HR, and analytics without losing your place.</p>
+      </div>
+
+      <div class="ow-why-card">
+        <div class="icon">⚡</div>
+        <h3>Built to be fast</h3>
+        <p>Every interaction is measured in milliseconds, not seconds. Whether you're posting an invoice or pulling a report, you stay in flow.</p>
+      </div>
+
+      <div class="ow-why-card">
+        <div class="icon">🛡️</div>
+        <h3>Your data, your control</h3>
+        <p>Role-based permissions, audit logs on every change, and encrypted backups by default. No surprises about who can see what.</p>
+      </div>
+
+      <div class="ow-why-card">
+        <div class="icon">🌍</div>
+        <h3>Local-first, global-ready</h3>
+        <p>Built with the regulatory and tax realities of Pakistan in mind, then designed to scale anywhere. Multi-currency and multi-tax built in.</p>
+      </div>
+
+      <div class="ow-why-card">
+        <div class="icon">🤝</div>
+        <h3>Real humans on support</h3>
+        <p>When something breaks, you talk to the people who built it — not a ticket queue. Most issues are resolved within a few hours.</p>
+      </div>
+
+      <div class="ow-why-card">
+        <div class="icon">💸</div>
+        <h3>Free to start</h3>
+        <p>Get started with NIMBY accounting without a credit card. Upgrade only if and when you need the premium features.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ TESTIMONIALS ═══════════════════════ -->
+<section class="ow-section" id="voices">
+  <div class="container">
+    <div class="section-eyebrow">Voices</div>
+    <h2 class="section-title">What people <em>are saying.</em></h2>
+    <p class="section-sub">Early users from across our products, in their own words.</p>
+
+    <div class="ow-testimonials">
+
+      <!-- REPLACE: with real quote from a NIMBY accounting user -->
+      <div class="ow-testimonial">
+        <p class="quote">We migrated three companies onto NIMBY in a single weekend. The invoice numbering and approval workflow alone saved my accountant about a day a week.</p>
+        <div class="author">
+          <div class="avatar">SK</div>
+          <div>
+            <div class="name">Sarah K.</div>
+            <div class="role">Finance Director, Mid-sized retailer</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPLACE: with real quote from a Pulse user -->
+      <div class="ow-testimonial">
+        <p class="quote">Pulse changed how we run monthly reviews. Drilling from a margin number to the underlying transactions used to take half a day. Now it takes three clicks.</p>
+        <div class="author">
+          <div class="avatar">AH</div>
+          <div>
+            <div class="name">Asad H.</div>
+            <div class="role">CFO, Multi-site fuel operator</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPLACE: with real quote from an HR user -->
+      <div class="ow-testimonial">
+        <p class="quote">The HR product is the first one our team actually uses without complaint. Attendance, task discussions, the policy library — it's all in one place.</p>
+        <div class="author">
+          <div class="avatar">FA</div>
+          <div>
+            <div class="name">Fatima A.</div>
+            <div class="role">Operations Manager, Growing startup</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="ow-testimonial-note">Are you a customer? <a href="#contact" style="color: var(--ow-navy); border-bottom: 1px solid var(--ow-navy);">Share your story</a> and we'll feature it here.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════ FINAL CTA ═══════════════════════ -->
+<section class="ow-final-cta" id="contact">
+  <div class="container">
+    <h2>One window. <em>Every tool.</em></h2>
+    <p>Get started with any of our products today. Free to try, no credit card required.</p>
+    <div class="actions">
+      <a href="#products" class="ow-cta">Browse products</a>
+      <a href="mailto:hello@northnextventures.com" style="color: #fff; font-size: 15px; align-self: center; border-bottom: 1px solid rgba(255,255,255,0.5); padding-bottom: 2px;">Talk to us →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+<footer class="ow-footer">
+  <div class="container">
+    <div class="top">
+      <div class="brand-block">
+        <div class="ow-logo">
+          <div class="ow-logo-mark"></div>
+          <div class="ow-logo-text">ONEWINDOW</div>
+        </div>
+        <p class="blurb">The unified portal for NorthNext Ventures products. Built in Islamabad, used everywhere.</p>
+      </div>
+      <div>
+        <div class="col-title">Products</div>
+        <ul>
+          <li><a href="https://accnimby.com" target="_blank" rel="noopener">NIMBY Accounting</a></li>
+          <li><a href="https://pulse.nimbyconsultants.com" target="_blank" rel="noopener">Pulse Analytics</a></li>
+          <li><a href="https://hr.northnextventures.com" target="_blank" rel="noopener">NorthNext HR</a></li>
+          <li><a href="#contact">Curator</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="col-title">Company</div>
+        <ul>
+          <li><a href="#why">Why OneWindow</a></li>
+          <li><a href="#voices">Voices</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="col-title">Get in touch</div>
+        <ul>
+          <li><a href="mailto:hello@northnextventures.com">hello@northnextventures.com</a></li>
+          <!-- REPLACE: with your real WhatsApp / phone -->
+          <li><a href="https://wa.me/923070767777" target="_blank" rel="noopener">WhatsApp us</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="bottom">
+      <div>© <span id="year">2026</span> NorthNext Ventures. All rights reserved.</div>
+      <div>onewindow.info</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ─── Footer year ───
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // ─── Rotating hero (per-slide duration) ───
+  // Cycles through .ow-hero-slide elements. Each slide can declare its
+  // own dwell time via data-duration (ms) — defaults to 6500ms. Slide 1
+  // (the umbrella) gets 12000ms so the cycling role headline can
+  // complete one full pass before the slide changes.
+  // Pauses on hover; pauses when the tab is hidden; respects the
+  // prefers-reduced-motion preference.
+  (function() {
+    var slides = document.querySelectorAll('.ow-hero-slide');
+    var dotsHost = document.getElementById('hero-dots');
+    var rotator = document.getElementById('hero-rotator');
+    if (!slides.length || !dotsHost || !rotator) return;
+
+    var current = 0;
+    var timer = null;
+    var DEFAULT_DURATION = 6500;
+    var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function durationFor(idx) {
+      var v = slides[idx].getAttribute('data-duration');
+      var n = Number(v);
+      return (v && isFinite(n) && n > 0) ? n : DEFAULT_DURATION;
+    }
+
+    // Build a nav dot per slide. Active dot wider + filled with brand colour.
+    for (var i = 0; i < slides.length; i++) {
+      (function(idx) {
+        var b = document.createElement('button');
+        b.setAttribute('aria-label', 'Go to slide ' + (idx + 1));
+        if (idx === 0) b.classList.add('is-active');
+        b.addEventListener('click', function() { goTo(idx); resetTimer(); });
+        dotsHost.appendChild(b);
+      })(i);
+    }
+    var dots = dotsHost.querySelectorAll('button');
+
+    function goTo(i) {
+      slides[current].classList.remove('is-active');
+      dots[current].classList.remove('is-active');
+      current = (i + slides.length) % slides.length;
+      slides[current].classList.add('is-active');
+      dots[current].classList.add('is-active');
+    }
+    function advance() { goTo(current + 1); scheduleNext(); }
+    function scheduleNext() {
+      stopTimer();
+      if (prefersReduced) return;
+      timer = setTimeout(advance, durationFor(current));
+    }
+    function stopTimer() {
+      if (timer) { clearTimeout(timer); timer = null; }
+    }
+    function resetTimer() { scheduleNext(); }
+
+    rotator.addEventListener('mouseenter', stopTimer);
+    rotator.addEventListener('mouseleave', scheduleNext);
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) stopTimer();
+      else scheduleNext();
+    });
+
+    scheduleNext();
+  })();
+
+  // ─── Slide 1: cycling role headline ───
+  // Inside the umbrella slide, cycle the four role .ow-role elements
+  // every 3 seconds (~12s for one full pass). Independent timer from the
+  // rotator above. Pauses while the user hovers the hero (handled by
+  // the rotator's pause logic via CSS — when hover stops the rotator
+  // timer, the role cycler keeps going since they're separate, but the
+  // cycling continues quietly which is fine).
+  (function() {
+    var roles = document.querySelectorAll('#ow-roles .ow-role');
+    if (!roles.length) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var idx = 0;
+    setInterval(function() {
+      roles[idx].classList.remove('is-active');
+      idx = (idx + 1) % roles.length;
+      roles[idx].classList.add('is-active');
+    }, 3000);
+  })();
+</script>
+
+</body>
+</html>
