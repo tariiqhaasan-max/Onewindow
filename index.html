@@ -364,6 +364,139 @@
     margin-top: 8px;
   }
 
+  /* ─── Curator lead form (embedded in Curator card) ─── */
+  .ow-curator-form {
+    margin-top: 18px;
+    padding-top: 22px;
+    border-top: 1px dashed var(--ow-line);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .ow-curator-form .cf-heading {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--ow-gold);
+    margin-bottom: 2px;
+  }
+  .ow-curator-form .cf-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .ow-curator-form input,
+  .ow-curator-form select,
+  .ow-curator-form textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--ow-line);
+    border-radius: 6px;
+    background: var(--ow-cream-2);
+    color: var(--ow-ink);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.4;
+    box-sizing: border-box;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .ow-curator-form input:focus,
+  .ow-curator-form select:focus,
+  .ow-curator-form textarea:focus {
+    outline: none;
+    border-color: var(--ow-navy);
+    background: var(--ow-paper);
+  }
+  .ow-curator-form textarea {
+    resize: vertical;
+    min-height: 70px;
+    font-family: inherit;
+  }
+  .ow-curator-form .cf-honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+  .ow-curator-form .cf-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+  .ow-curator-form button {
+    background: var(--ow-navy);
+    color: #fff;
+    border: none;
+    padding: 11px 22px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .ow-curator-form button:hover:not(:disabled) {
+    background: var(--ow-navy-soft);
+  }
+  .ow-curator-form button:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .ow-curator-form button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .ow-curator-form .cf-secondary {
+    color: var(--ow-navy);
+    font-size: 13px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--ow-navy);
+    padding-bottom: 1px;
+    text-decoration: none;
+  }
+  .ow-curator-form .cf-secondary:hover {
+    color: var(--ow-rose);
+    border-color: var(--ow-rose);
+  }
+  .ow-curator-form .cf-msg {
+    font-size: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    line-height: 1.45;
+    display: none;
+  }
+  .ow-curator-form .cf-msg.cf-success {
+    display: block;
+    background: #ecf6ee;
+    color: #1e5b2c;
+    border: 1px solid #c7e3cd;
+  }
+  .ow-curator-form .cf-msg.cf-error {
+    display: block;
+    background: #fdecea;
+    color: #8a2a1f;
+    border: 1px solid #f3c2bb;
+  }
+  .ow-curator-form .cf-thanks {
+    background: var(--ow-cream-2);
+    border: 1px solid var(--ow-gold-soft);
+    border-radius: 6px;
+    padding: 16px;
+    font-size: 13px;
+    color: var(--ow-ink);
+    line-height: 1.55;
+    display: none;
+  }
+  .ow-curator-form .cf-thanks.visible { display: block; }
+  .ow-curator-form .cf-thanks strong { color: var(--ow-navy); }
+  @media (max-width: 600px) {
+    .ow-curator-form .cf-row { grid-template-columns: 1fr; }
+  }
+
   /* ─── Why OneWindow features ─── */
   .ow-why-grid {
     display: grid;
@@ -1363,11 +1496,11 @@
       </div>
 
       <!-- ───── Curator — Free Business Setup ───── -->
-      <!-- Repositioned from "pipeline tooling" to the free business setup
-           service. This is the gateway product: visitors arriving via the
-           SECP/FBR slides land here. Pakistan-only because regulatory
-           work is jurisdiction-specific. -->
-      <div class="ow-product-card">
+      <!-- This card now includes an inline lead-capture form. Submissions
+           POST to onewindow-lead-handler Cloudflare Worker, which inserts
+           into the NIMBY Supabase project (onewindow_curator_leads table)
+           and sends a notification email via Resend. -->
+      <div class="ow-product-card" id="curator-card">
         <div class="pc-tag">Business Setup · Free</div>
         <h3>Curator</h3>
         <p class="pc-pitch">Start your business properly. For free.</p>
@@ -1378,7 +1511,47 @@
           <li>One-hour advisory with a CPA</li>
           <li>Compliances included for the first three months</li>
         </ul>
-        <a href="#contact" class="pc-cta">Get started for free →</a>
+
+        <!-- Embedded lead form -->
+        <form class="ow-curator-form" id="curator-lead-form" novalidate>
+          <div class="cf-heading">Get started — leave your details</div>
+
+          <div class="cf-row">
+            <input type="text" name="name" id="cf-name" placeholder="Your name *" autocomplete="name" required maxlength="120">
+            <input type="email" name="email" id="cf-email" placeholder="Email *" autocomplete="email" required maxlength="200">
+          </div>
+
+          <div class="cf-row">
+            <input type="tel" name="phone" id="cf-phone" placeholder="Phone (optional)" autocomplete="tel" maxlength="40">
+            <select name="business_type" id="cf-business-type">
+              <option value="">Business type (optional)</option>
+              <option value="Sole proprietorship">Sole proprietorship</option>
+              <option value="Partnership (AOP)">Partnership (AOP)</option>
+              <option value="Private Limited (SECP)">Private Limited (SECP)</option>
+              <option value="Single Member Company">Single Member Company</option>
+              <option value="Not sure yet">Not sure yet</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <textarea name="message" id="cf-message" placeholder="Anything we should know? (optional)" maxlength="2000"></textarea>
+
+          <!-- Honeypot — hidden from humans, bots fill it -->
+          <input type="text" name="website" id="cf-website" class="cf-honeypot" tabindex="-1" autocomplete="off">
+
+          <div class="cf-msg" id="cf-msg"></div>
+
+          <div class="cf-actions">
+            <button type="submit" id="cf-submit">Get started for free →</button>
+            <a href="https://accnimby.com/curator.html" target="_blank" rel="noopener" class="cf-secondary">See full Curator page →</a>
+          </div>
+
+          <div class="cf-thanks" id="cf-thanks">
+            <strong>Thanks — we've got your details.</strong><br>
+            A chartered accountant from our team will reach out within one business day to walk you through SECP registration and FBR setup. No service fee.
+          </div>
+        </form>
+
         <p class="pc-region">Currently available to Pakistani teams only.</p>
       </div>
 
@@ -1575,7 +1748,7 @@
           <li><a href="https://accnimby.com" target="_blank" rel="noopener">NIMBY Accounting</a></li>
           <li><a href="https://pulse.nimbyconsultants.com" target="_blank" rel="noopener">Pulse Analytics</a></li>
           <li><a href="https://hr.northnextventures.com" target="_blank" rel="noopener">NorthNext HR</a></li>
-          <li><a href="#contact">Curator</a></li>
+          <li><a href="#curator-card">Curator</a></li>
         </ul>
       </div>
       <div>
@@ -1687,6 +1860,85 @@
       idx = (idx + 1) % roles.length;
       roles[idx].classList.add('is-active');
     }, 3000);
+  })();
+</script>
+
+<!-- ─── Curator lead form handler ─── -->
+<script>
+  (function () {
+    // ⚠️  IMPORTANT: After deploying the Worker, paste its URL here.
+    // Default Cloudflare URL pattern: https://onewindow-lead-handler.<your-subdomain>.workers.dev
+    // If you bind a custom route later (e.g. leads.onewindow.info), update here.
+    const WORKER_URL = 'https://onewindow-lead-handler.tariiq-haasan.workers.dev/submit';
+
+    const form     = document.getElementById('curator-lead-form');
+    const submit   = document.getElementById('cf-submit');
+    const msg      = document.getElementById('cf-msg');
+    const thanks   = document.getElementById('cf-thanks');
+
+    if (!form) return;
+
+    function showError(text) {
+      msg.textContent = text;
+      msg.className = 'cf-msg cf-error';
+    }
+    function clearMsg() {
+      msg.textContent = '';
+      msg.className = 'cf-msg';
+    }
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      clearMsg();
+
+      const payload = {
+        name:           document.getElementById('cf-name').value.trim(),
+        email:          document.getElementById('cf-email').value.trim(),
+        phone:          document.getElementById('cf-phone').value.trim(),
+        business_type:  document.getElementById('cf-business-type').value,
+        message:        document.getElementById('cf-message').value.trim(),
+        website:        document.getElementById('cf-website').value, // honeypot
+      };
+
+      // Quick client-side guard rails — the worker re-validates anyway
+      if (!payload.name || payload.name.length < 2) {
+        showError('Please enter your name.');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+        showError('Please enter a valid email address.');
+        return;
+      }
+
+      submit.disabled = true;
+      const originalLabel = submit.textContent;
+      submit.textContent = 'Sending…';
+
+      try {
+        const res = await fetch(WORKER_URL, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(payload),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok && data.ok) {
+          // Success — hide form fields, show thank-you panel
+          const toHide = form.querySelectorAll('.cf-row, textarea, .cf-actions, .cf-heading, .cf-msg');
+          toHide.forEach(function (el) { el.style.display = 'none'; });
+          thanks.classList.add('visible');
+        } else {
+          showError(data.error || 'Something went wrong. Please try again, or email hello@northnextventures.com.');
+          submit.disabled = false;
+          submit.textContent = originalLabel;
+        }
+      } catch (err) {
+        showError('Network error. Please check your connection and try again.');
+        submit.disabled = false;
+        submit.textContent = originalLabel;
+      }
+    });
   })();
 </script>
 
