@@ -1,47 +1,794 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NIMBY for Founders has moved to OneWindow</title>
-<meta name="robots" content="noindex, nofollow">
-<link rel="canonical" href="https://onewindow.info/startups.html">
-<meta http-equiv="refresh" content="0; url=https://onewindow.info/startups.html">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NIMBY for Founders — Free company setup &amp; bookkeeping for your first 3 months</title>
+<meta name="description" content="We handle SECP registration, NTN, sales tax, bank account opening, and your first 3 months of bookkeeping — free. Built for founders who'd rather build than do paperwork." />
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
+  :root {
+    --f-bg: var(--nimby-bg, #f8f4ea);
+    --f-surface: var(--nimby-surface, #ffffff);
+    --f-text: var(--nimby-text, #1a1a1a);
+    --f-text-muted: var(--nimby-text-muted, #555);
+    --f-text-faint: var(--nimby-text-faint, #888);
+    --f-accent: var(--nimby-accent, #2563eb);
+    --f-accent-hover: var(--nimby-accent-hover, #1d4ed8);
+    --f-accent-soft: var(--nimby-accent-soft, #dbeafe);
+    --f-mustard: #8a7a18;
+    --f-mustard-soft: #f5edc4;
+    --f-border: var(--nimby-border, #e5e0d3);
+    --f-r-md: 10px;
+    --f-r-lg: 14px;
+  }
+
+  * { box-sizing: border-box; }
   body {
-    margin: 0; padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    background: #fbf6ec; color: #2d2418;
-    min-height: 100vh;
-    display: flex; align-items: center; justify-content: center;
+    margin: 0;
+    background: var(--f-bg);
+    color: var(--f-text);
+    font-family: 'Jost', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  .box { text-align: center; padding: 32px 28px; max-width: 360px; }
-  .mark {
-    width: 28px; height: 28px; border-radius: 50%;
-    background: linear-gradient(135deg, #c9a87c 0%, #6b5d4a 100%);
-    margin: 0 auto 18px;
+  a { color: var(--f-accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ----- Top nav ----- */
+  .f-nav {
+    background: var(--f-bg);
+    border-bottom: 1px solid var(--f-border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
   }
-  h1 {
+  .f-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--f-text);
+  }
+  .f-brand img { width: 34px; height: 34px; }
+  .f-brand-text {
     font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: 24px; font-weight: 500;
-    color: #0c3a4a; margin: 0 0 8px;
+    font-weight: 500;
+    font-size: 22px;
+    letter-spacing: 0.18em;
   }
-  p { font-size: 13px; color: #6b5d4a; line-height: 1.5; margin: 0 0 18px; }
-  a { color: #0c3a4a; text-decoration: underline; text-underline-offset: 2px; font-weight: 600; font-size: 13px; }
+  .f-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .f-nav-links a {
+    color: var(--f-text-muted);
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .f-nav-links a:hover { color: var(--f-text); text-decoration: none; }
+  .f-nav-cta {
+    background: var(--f-accent);
+    color: #fff !important;
+    padding: 9px 18px;
+    border-radius: var(--f-r-md);
+    font-weight: 500;
+    font-size: 14px;
+  }
+  .f-nav-cta:hover { background: var(--f-accent-hover); text-decoration: none !important; }
+
+  /* ----- Hero ----- */
+  .f-hero {
+    text-align: center;
+    padding: 80px 24px 60px;
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  .f-eyebrow {
+    display: inline-block;
+    background: var(--f-mustard-soft);
+    color: var(--f-mustard);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 999px;
+    margin-bottom: 28px;
+  }
+  .f-hero h1 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: clamp(40px, 6vw, 64px);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 24px;
+    color: var(--f-text);
+  }
+  .f-hero h1 em {
+    font-style: italic;
+    color: var(--f-mustard);
+    font-weight: 500;
+  }
+  .f-hero-sub {
+    font-size: 19px;
+    color: var(--f-text-muted);
+    max-width: 640px;
+    margin: 0 auto 36px;
+    line-height: 1.55;
+  }
+  .f-hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--f-accent);
+    color: #fff;
+    padding: 14px 28px;
+    border-radius: var(--f-r-md);
+    font-size: 16px;
+    font-weight: 500;
+    border: 0;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .f-hero-cta:hover { background: var(--f-accent-hover); text-decoration: none; }
+  .f-hero-microcopy {
+    margin-top: 14px;
+    color: var(--f-text-faint);
+    font-size: 13px;
+  }
+
+  /* ----- What we do ----- */
+  .f-section {
+    padding: 70px 24px;
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+  .f-section-label {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--f-text-faint);
+    margin-bottom: 14px;
+  }
+  .f-section h2 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    text-align: center;
+    margin: 0 0 16px;
+  }
+  .f-section h2 em {
+    font-style: italic;
+    color: var(--f-mustard);
+    font-weight: 500;
+  }
+  .f-section-sub {
+    text-align: center;
+    color: var(--f-text-muted);
+    font-size: 17px;
+    max-width: 640px;
+    margin: 0 auto 56px;
+  }
+
+  .f-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+  }
+  .f-card {
+    background: var(--f-surface);
+    border: 1px solid var(--f-border);
+    border-radius: var(--f-r-lg);
+    padding: 26px 24px;
+  }
+  .f-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--f-accent-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+  .f-card h3 {
+    font-family: 'Jost', sans-serif;
+    font-weight: 600;
+    font-size: 17px;
+    margin: 0 0 8px;
+    color: var(--f-text);
+  }
+  .f-card p {
+    margin: 0;
+    color: var(--f-text-muted);
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+
+  /* ----- How it works (numbered steps) ----- */
+  .f-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    margin-top: 40px;
+  }
+  .f-step {
+    text-align: left;
+    padding: 0 4px;
+  }
+  .f-step-num {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 500;
+    font-size: 38px;
+    color: var(--f-mustard);
+    line-height: 1;
+    margin-bottom: 14px;
+  }
+  .f-step h4 {
+    font-family: 'Jost', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    margin: 0 0 6px;
+  }
+  .f-step p {
+    margin: 0;
+    color: var(--f-text-muted);
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+
+  /* ----- Pricing block ----- */
+  .f-pricing {
+    background: var(--f-surface);
+    border: 1px solid var(--f-border);
+    border-radius: var(--f-r-lg);
+    padding: 40px 32px;
+    max-width: 760px;
+    margin: 60px auto 0;
+    text-align: center;
+  }
+  .f-pricing-tag {
+    display: inline-block;
+    background: var(--f-mustard-soft);
+    color: var(--f-mustard);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+  }
+  .f-pricing h3 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 500;
+    font-size: 30px;
+    margin: 0 0 12px;
+  }
+  .f-pricing h3 em { font-style: italic; color: var(--f-mustard); font-weight: 500; }
+  .f-pricing p {
+    margin: 0 auto;
+    color: var(--f-text-muted);
+    max-width: 540px;
+    font-size: 15.5px;
+  }
+  .f-pricing-list {
+    text-align: left;
+    max-width: 480px;
+    margin: 28px auto 0;
+    padding: 0;
+    list-style: none;
+  }
+  .f-pricing-list li {
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--f-border);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 14.5px;
+    color: var(--f-text);
+  }
+  .f-pricing-list li:last-child { border-bottom: 0; }
+  .f-pricing-list .check {
+    color: var(--f-mustard);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  /* ----- Equity callout ----- */
+  .f-equity {
+    background: var(--f-mustard-soft);
+    border-radius: var(--f-r-lg);
+    padding: 28px 32px;
+    max-width: 760px;
+    margin: 36px auto 0;
+    text-align: center;
+  }
+  .f-equity strong {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 19px;
+    color: var(--f-mustard);
+  }
+  .f-equity p {
+    margin: 8px 0 0;
+    color: var(--f-text);
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+
+  /* ----- Application form ----- */
+  .f-apply {
+    background: var(--f-surface);
+    border: 1px solid var(--f-border);
+    border-radius: var(--f-r-lg);
+    padding: 40px 36px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .f-apply h2 { text-align: left; margin-bottom: 8px; }
+  .f-apply .f-section-sub { text-align: left; margin: 0 0 28px; }
+
+  .f-form-row { margin-bottom: 18px; }
+  .f-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 540px) { .f-form-grid { grid-template-columns: 1fr; } }
+  .f-form-row label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--f-text-faint);
+    margin-bottom: 6px;
+  }
+  .f-form-row input,
+  .f-form-row select,
+  .f-form-row textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--f-border);
+    border-radius: var(--f-r-md);
+    background: var(--f-surface);
+    font-family: 'Jost', sans-serif;
+    font-size: 15px;
+    color: var(--f-text);
+  }
+  .f-form-row textarea { min-height: 96px; resize: vertical; }
+  .f-form-row input:focus,
+  .f-form-row select:focus,
+  .f-form-row textarea:focus {
+    outline: none;
+    border-color: var(--f-accent);
+    box-shadow: 0 0 0 3px var(--f-accent-soft);
+  }
+  .f-form-row.is-error input,
+  .f-form-row.is-error select,
+  .f-form-row.is-error textarea {
+    border-color: #b91c1c;
+  }
+  .f-form-row .f-error-text {
+    color: #b91c1c;
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  .f-form-submit {
+    width: 100%;
+    background: var(--f-accent);
+    color: #fff;
+    padding: 14px;
+    border-radius: var(--f-r-md);
+    font-size: 16px;
+    font-weight: 500;
+    border: 0;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .f-form-submit:hover { background: var(--f-accent-hover); }
+  .f-form-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .f-success,
+  .f-failure {
+    text-align: center;
+    padding: 40px 24px;
+  }
+  .f-success-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: #166534;
+    margin: 0 auto 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .f-failure-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #fee2e2;
+    color: #991b1b;
+    margin: 0 auto 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .f-success h3,
+  .f-failure h3 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 500;
+    font-size: 24px;
+    margin: 0 0 10px;
+  }
+  .f-success p,
+  .f-failure p {
+    color: var(--f-text-muted);
+    margin: 0;
+  }
+
+  /* ----- Footer ----- */
+  .f-footer {
+    text-align: center;
+    padding: 60px 24px 40px;
+    color: var(--f-text-faint);
+    font-size: 13px;
+    border-top: 1px solid var(--f-border);
+    margin-top: 80px;
+  }
+  .f-footer a { color: var(--f-text-muted); }
 </style>
 </head>
 <body>
-<div class="box">
-  <div class="mark"></div>
-  <h1>NIMBY for Founders has moved</h1>
-  <p>Find us now at <strong>onewindow.info/startups</strong>. Taking you there…</p>
-  <p><a href="https://onewindow.info/startups.html">Continue →</a></p>
-</div>
+
+<!-- ============================== NAV ============================== -->
+<nav class="f-nav">
+  <a class="f-brand" href="/index.html">
+    <img src="/nimby-logo.png" alt="NIMBY" />
+    <span class="f-brand-text">NIMBY</span>
+  </a>
+  <div class="f-nav-links">
+    <a href="/index.html">Home</a>
+    <a href="/index.html#features">Features</a>
+    <a href="/index.html#pricing">Pricing</a>
+    <a class="f-nav-cta" href="#apply">Apply now</a>
+  </div>
+</nav>
+
+<!-- ============================== HERO ============================== -->
+<section class="f-hero">
+  <span class="f-eyebrow">NIMBY for Founders</span>
+  <h1>From idea to <em>set up,</em><br />on us.</h1>
+  <p class="f-hero-sub">
+    We handle company registration, tax setup, bank account opening, and your first
+    three months of bookkeeping — completely free. So you can focus on building, not paperwork.
+  </p>
+  <a href="#apply" class="f-hero-cta">Apply for free setup &nbsp;→</a>
+  <div class="f-hero-microcopy">No credit card. No commitment. Just tell us what you're building.</div>
+</section>
+
+<!-- ============================== WHAT WE COVER ============================== -->
+<section class="f-section">
+  <div class="f-section-label">What we handle</div>
+  <h2>Everything between an idea and a <em>real, registered</em> business.</h2>
+  <p class="f-section-sub">
+    Setting up a company in Pakistan involves SECP, FBR, banks, and a stack of forms most founders have never seen.
+    Our team takes the whole thing off your plate.
+  </p>
+
+  <div class="f-grid">
+    <div class="f-card">
+      <div class="f-card-icon">📝</div>
+      <h3>Company registration</h3>
+      <p>SECP filings, MoA &amp; AoA, partnership deeds — whichever entity structure fits, we draft and file it for you.</p>
+    </div>
+    <div class="f-card">
+      <div class="f-card-icon">🧾</div>
+      <h3>Tax registration</h3>
+      <p>NTN with FBR, sales tax registration where applicable. We handle the IRIS portal so you never have to.</p>
+    </div>
+    <div class="f-card">
+      <div class="f-card-icon">🏦</div>
+      <h3>Bank account opening</h3>
+      <p>We help you choose the right bank, prepare the board resolution, and walk you through the account application end-to-end.</p>
+    </div>
+    <div class="f-card">
+      <div class="f-card-icon">📊</div>
+      <h3>Bookkeeping foundation</h3>
+      <p>The day you're registered, you get a working chart of accounts, opening balances, and your first invoices ready to send.</p>
+    </div>
+    <div class="f-card">
+      <div class="f-card-icon">💬</div>
+      <h3>Free advisory</h3>
+      <p>Three months of unlimited check-ins with a senior advisor. Got a question about a contract, an invoice, or a tax notice? Just ask.</p>
+    </div>
+    <div class="f-card">
+      <div class="f-card-icon">📈</div>
+      <h3>Investor-ready financials</h3>
+      <p>If you're raising, we'll help you put together cap tables, runway, burn, and the financial shape investors expect to see.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== HOW IT WORKS ============================== -->
+<section class="f-section" style="padding-top: 30px;">
+  <div class="f-section-label">How it works</div>
+  <h2>Four steps, fully <em>guided.</em></h2>
+
+  <div class="f-steps">
+    <div class="f-step">
+      <div class="f-step-num">1</div>
+      <h4>You apply</h4>
+      <p>Fill out the form below. Tell us what you're building, where you are, and what you need help with.</p>
+    </div>
+    <div class="f-step">
+      <div class="f-step-num">2</div>
+      <h4>We talk</h4>
+      <p>A short kickoff call to understand your business, decide on the right entity, and assign your advisor.</p>
+    </div>
+    <div class="f-step">
+      <div class="f-step-num">3</div>
+      <h4>We register &amp; set up</h4>
+      <p>SECP, FBR, banking, COA. We do the work; you sign what needs signing. Most founders are operational in 4–6 weeks.</p>
+    </div>
+    <div class="f-step">
+      <div class="f-step-num">4</div>
+      <h4>You build</h4>
+      <p>Three months of free bookkeeping and advisory while you find your footing. After that, we move to a paid plan that fits your size.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== PRICING ============================== -->
+<section class="f-section" style="padding-top: 30px;">
+  <div class="f-pricing">
+    <span class="f-pricing-tag">The offer</span>
+    <h3>Free for the first <em>three months.</em></h3>
+    <p>
+      No fees during setup, no fees during your first quarter of bookkeeping. After three months,
+      we transition to a monthly plan priced to your company's size and complexity — never one-size-fits-all.
+    </p>
+
+    <ul class="f-pricing-list">
+      <li><span class="check">✓</span> SECP company registration — included</li>
+      <li><span class="check">✓</span> NTN &amp; sales tax registration — included</li>
+      <li><span class="check">✓</span> Bank account application support — included</li>
+      <li><span class="check">✓</span> Chart of accounts &amp; opening balances — included</li>
+      <li><span class="check">✓</span> 3 months of bookkeeping — free</li>
+      <li><span class="check">✓</span> 3 months of senior advisor access — free</li>
+    </ul>
+  </div>
+
+  <div class="f-equity">
+    <strong>Building something we believe in?</strong>
+    <p>For ideas we're particularly excited about, we may offer extended free support in exchange for a small equity stake — turning NIMBY into your earliest finance partner. Mention it in your application if you're open to discussing.</p>
+  </div>
+</section>
+
+<!-- ============================== APPLY ============================== -->
+<section class="f-section" id="apply" style="padding-top: 30px;">
+  <div class="f-apply">
+    <div id="apply-form-host">
+      <div class="f-section-label" style="text-align:left;">Apply for NIMBY for Founders</div>
+      <h2>Tell us what you're <em>building.</em></h2>
+      <p class="f-section-sub">A few quick fields. We'll respond within two working days.</p>
+
+      <form id="apply-form" novalidate>
+        <div class="f-form-row">
+          <label for="f-name">Startup or company name *</label>
+          <input type="text" id="f-name" name="name" required maxlength="120" />
+        </div>
+
+        <div class="f-form-grid">
+          <div class="f-form-row">
+            <label for="f-founder-name">Your name *</label>
+            <input type="text" id="f-founder-name" name="founder_name" required maxlength="120" />
+          </div>
+          <div class="f-form-row">
+            <label for="f-founder-email">Your email *</label>
+            <input type="email" id="f-founder-email" name="founder_email" required maxlength="200" />
+          </div>
+        </div>
+
+        <div class="f-form-grid">
+          <div class="f-form-row">
+            <label for="f-founder-phone">Phone (optional)</label>
+            <input type="text" id="f-founder-phone" name="founder_phone" maxlength="40" />
+          </div>
+          <div class="f-form-row">
+            <label for="f-industry">Industry / sector</label>
+            <input type="text" id="f-industry" name="industry" maxlength="80" placeholder="e.g. SaaS, retail, agri" />
+          </div>
+        </div>
+
+        <div class="f-form-grid">
+          <div class="f-form-row">
+            <label for="f-stage">Where are you today?</label>
+            <select id="f-stage" name="stage_when_acquired">
+              <option value="">—</option>
+              <option value="idea">Just an idea</option>
+              <option value="mvp">Building the MVP</option>
+              <option value="pre_revenue">Pre-revenue / launching soon</option>
+              <option value="post_revenue">Already earning revenue</option>
+            </select>
+          </div>
+          <div class="f-form-row">
+            <label for="f-entity">Entity type (if you have a preference)</label>
+            <select id="f-entity" name="entity_type_planned">
+              <option value="">— Help me decide —</option>
+              <option value="private_ltd">Private Limited</option>
+              <option value="sole_prop">Sole Proprietorship</option>
+              <option value="partnership">Partnership</option>
+              <option value="aop">AOP</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="f-form-row">
+          <label for="f-pitch">Tell us about it *</label>
+          <textarea id="f-pitch" name="pitch" required maxlength="1500" placeholder="What are you building? Who's it for? Where are you stuck?"></textarea>
+        </div>
+
+        <button type="submit" class="f-form-submit" id="apply-submit">Submit application</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== FOOTER ============================== -->
+<footer class="f-footer">
+  <p>NIMBY · <a href="/index.html">Home</a> · <a href="https://accnimby.com/login.html">Sign in</a></p>
+  <p style="margin-top: 14px;">Built with care for growing businesses.</p>
+</footer>
+
+<!-- ============================== SCRIPTS ============================== -->
+<!--
+  Self-contained: this page does NOT depend on /js/nimby-core.js.
+  Anonymous applications use a direct Supabase REST call with the public anon key.
+-->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function () {
   'use strict';
-  window.location.replace('https://onewindow.info/startups.html' + (window.location.search || '') + (window.location.hash || ''));
+
+  var SUPABASE_URL = 'https://mnsqveegyfjzqqlgtatj.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1uc3F2ZWVneWZqenFxbGd0YXRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NTAzNjEsImV4cCI6MjA5MzMyNjM2MX0.I2u1pzReErcDCxwMJh6qYV2TWnZYaQO-tpngAZVI-RA';
+
+  var sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+  function isEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v || ''); }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  function setError(rowEl, message) {
+    rowEl.classList.add('is-error');
+    var existing = rowEl.querySelector('.f-error-text');
+    if (existing) existing.remove();
+    var msg = document.createElement('div');
+    msg.className = 'f-error-text';
+    msg.textContent = message;
+    rowEl.appendChild(msg);
+  }
+
+  function clearErrors(form) {
+    form.querySelectorAll('.is-error').forEach(function (el) { el.classList.remove('is-error'); });
+    form.querySelectorAll('.f-error-text').forEach(function (el) { el.remove(); });
+  }
+
+  function showSuccess() {
+    var host = document.getElementById('apply-form-host');
+    host.innerHTML =
+      '<div class="f-success">' +
+        '<div class="f-success-icon">✓</div>' +
+        '<h3>Application received.</h3>' +
+        '<p>Thanks. We\'ll be in touch within two working days at the email you provided.</p>' +
+      '</div>';
+    // Scroll the success message into view
+    host.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function showFailure(message) {
+    var host = document.getElementById('apply-form-host');
+    host.innerHTML =
+      '<div class="f-failure">' +
+        '<div class="f-failure-icon">!</div>' +
+        '<h3>We couldn\'t submit that.</h3>' +
+        '<p>' + escapeHtml(message || 'Something went wrong. Please try again, or email us directly.') + '</p>' +
+        '<p style="margin-top:18px;"><a href="#apply" onclick="location.reload(); return false;">Try again</a></p>' +
+      '</div>';
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('apply-form');
+    var btn = document.getElementById('apply-submit');
+
+    if (!sb) {
+      console.error('[Founders] Supabase client failed to load');
+      return;
+    }
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      clearErrors(form);
+
+      var get = function (name) {
+        var el = form.querySelector('[name="' + name + '"]');
+        return el ? (el.value || '').trim() : '';
+      };
+
+      var payload = {
+        name:                get('name'),
+        founder_name:        get('founder_name'),
+        founder_email:       get('founder_email'),
+        founder_phone:       get('founder_phone') || null,
+        pitch:               get('pitch') || null,
+        industry:            get('industry') || null,
+        stage_when_acquired: get('stage_when_acquired') || null,
+        entity_type_planned: get('entity_type_planned') || null,
+        jurisdiction:        'PK',
+        plan_type:           'founder',
+        status:              'new',
+        current_stage:       'inquiry'
+      };
+
+      // Validation
+      var ok = true;
+      function rowOf(name) { return form.querySelector('[name="' + name + '"]').closest('.f-form-row'); }
+      if (!payload.name) { setError(rowOf('name'), 'Required'); ok = false; }
+      if (!payload.founder_name) { setError(rowOf('founder_name'), 'Required'); ok = false; }
+      if (!isEmail(payload.founder_email)) { setError(rowOf('founder_email'), 'Please enter a valid email'); ok = false; }
+      if (!payload.pitch) { setError(rowOf('pitch'), 'Tell us a little about what you\'re building'); ok = false; }
+      if (!ok) return;
+
+      btn.disabled = true;
+      var originalLabel = btn.textContent;
+      btn.textContent = 'Submitting…';
+
+      try {
+        var result = await sb.from('nimby_startup_leads').insert(payload).select().single();
+        if (result.error) throw result.error;
+        showSuccess();
+      } catch (err) {
+        console.error('[Founders] Insert failed:', err);
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+        showFailure((err && (err.message || err.hint)) || 'Please try again in a moment.');
+      }
+    });
+  });
 })();
 </script>
+
+
 </body>
 </html>
