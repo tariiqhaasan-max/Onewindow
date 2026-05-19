@@ -493,6 +493,79 @@
   }
   .ow-curator-form .cf-thanks.visible { display: block; }
   .ow-curator-form .cf-thanks strong { color: var(--ow-navy); }
+
+  /* ─── Services needed (checkbox grid) ─── */
+  .ow-curator-form .cf-services {
+    margin-top: 2px;
+  }
+  .ow-curator-form .cf-services-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ow-ink);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+  .ow-curator-form .cf-services-label .req {
+    color: var(--ow-rose);
+    margin-left: 2px;
+  }
+  .ow-curator-form .cf-services-label .hint {
+    display: block;
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--ow-ink-soft);
+    margin-top: 2px;
+    letter-spacing: 0.2px;
+  }
+  .ow-curator-form .cf-services-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+  }
+  @media (max-width: 600px) {
+    .ow-curator-form .cf-services-grid { grid-template-columns: 1fr; }
+  }
+  .ow-curator-form .cf-service-opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: var(--ow-cream-2);
+    border: 1px solid var(--ow-line);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--ow-ink);
+    line-height: 1.3;
+    transition: background 0.12s, border-color 0.12s;
+    user-select: none;
+  }
+  .ow-curator-form .cf-service-opt:hover {
+    border-color: var(--ow-navy);
+    background: var(--ow-paper);
+  }
+  .ow-curator-form .cf-service-opt input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--ow-navy);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .ow-curator-form .cf-service-opt.checked {
+    background: var(--ow-paper);
+    border-color: var(--ow-navy);
+    box-shadow: inset 0 0 0 1px var(--ow-navy);
+  }
+  .ow-curator-form .cf-services-other {
+    margin-top: 8px;
+    display: none;
+  }
+  .ow-curator-form .cf-services-other.visible {
+    display: block;
+  }
+
   @media (max-width: 600px) {
     .ow-curator-form .cf-row { grid-template-columns: 1fr; }
   }
@@ -1534,7 +1607,28 @@
             </select>
           </div>
 
-          <textarea name="message" id="cf-message" placeholder="Anything we should know? (optional)" maxlength="2000"></textarea>
+          <!-- What services do you need? (required, multi-select) -->
+          <div class="cf-services">
+            <div class="cf-services-label">
+              What do you need help with?<span class="req">*</span>
+              <span class="hint">Tick all that apply — we'll route you to the right CPA.</span>
+            </div>
+            <div class="cf-services-grid" id="cf-services-grid">
+              <label class="cf-service-opt"><input type="checkbox" name="services" value="company_incorporation"> Company incorporation</label>
+              <label class="cf-service-opt"><input type="checkbox" name="services" value="fbr_ntn">                FBR registration (NTN)</label>
+              <label class="cf-service-opt"><input type="checkbox" name="services" value="ngo_section_42">         NGO setup (Section 42)</label>
+              <label class="cf-service-opt"><input type="checkbox" name="services" value="ubo_filing">             UBO filing</label>
+              <label class="cf-service-opt"><input type="checkbox" name="services" value="sales_tax">              Sales tax registration</label>
+              <label class="cf-service-opt"><input type="checkbox" name="services" value="trade_marks">            Trade marks</label>
+              <label class="cf-service-opt"><input type="checkbox" name="services" value="audit">                  Audit</label>
+              <label class="cf-service-opt"><input type="checkbox" name="services" value="other">                  Other</label>
+            </div>
+            <div class="cf-services-other" id="cf-services-other-wrap">
+              <input type="text" name="services_other" id="cf-services-other" placeholder="Tell us what you need…" maxlength="240">
+            </div>
+          </div>
+
+          <textarea name="message" id="cf-message" placeholder="Anything else we should know? (optional)" maxlength="2000"></textarea>
 
           <!-- Honeypot — hidden from humans, bots fill it -->
           <input type="text" name="website" id="cf-website" class="cf-honeypot" tabindex="-1" autocomplete="off">
@@ -1887,15 +1981,44 @@
       msg.className = 'cf-msg';
     }
 
+    // ─── Services checkbox UX ───
+    // Toggle the "checked" visual on each option pill.
+    // Show / hide the "Other" free-text input based on the "other" checkbox.
+    const serviceBoxes = form.querySelectorAll('input[name="services"]');
+    const otherWrap    = document.getElementById('cf-services-other-wrap');
+    const otherInput   = document.getElementById('cf-services-other');
+
+    serviceBoxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        // Visual state on the label
+        const label = cb.closest('.cf-service-opt');
+        if (label) label.classList.toggle('checked', cb.checked);
+
+        // Reveal "Other" input when "other" is ticked
+        if (cb.value === 'other') {
+          otherWrap.classList.toggle('visible', cb.checked);
+          if (!cb.checked) otherInput.value = '';
+          if (cb.checked) setTimeout(() => otherInput.focus(), 50);
+        }
+      });
+    });
+
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
       clearMsg();
+
+      // Collect ticked services
+      const services = Array.from(serviceBoxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
 
       const payload = {
         name:           document.getElementById('cf-name').value.trim(),
         email:          document.getElementById('cf-email').value.trim(),
         phone:          document.getElementById('cf-phone').value.trim(),
         business_type:  document.getElementById('cf-business-type').value,
+        services_requested: services,
+        services_other: services.includes('other') ? otherInput.value.trim() : '',
         message:        document.getElementById('cf-message').value.trim(),
         website:        document.getElementById('cf-website').value, // honeypot
       };
@@ -1907,6 +2030,15 @@
       }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
         showError('Please enter a valid email address.');
+        return;
+      }
+      if (services.length === 0) {
+        showError('Please tick at least one service you need help with.');
+        return;
+      }
+      if (services.includes('other') && !payload.services_other) {
+        showError('You ticked "Other" — please tell us what you need.');
+        otherInput.focus();
         return;
       }
 
@@ -1925,7 +2057,7 @@
 
         if (res.ok && data.ok) {
           // Success — hide form fields, show thank-you panel
-          const toHide = form.querySelectorAll('.cf-row, textarea, .cf-actions, .cf-heading, .cf-msg');
+          const toHide = form.querySelectorAll('.cf-row, .cf-services, textarea, .cf-actions, .cf-heading, .cf-msg');
           toHide.forEach(function (el) { el.style.display = 'none'; });
           thanks.classList.add('visible');
         } else {
