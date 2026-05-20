@@ -26,6 +26,20 @@
     --f-border: var(--nimby-border, #e5e0d3);
     --f-r-md: 10px;
     --f-r-lg: 14px;
+
+    /* OneWindow shared tokens (used by the unified Curator lead form below) */
+    --ow-cream:        #f7f1e6;
+    --ow-cream-2:      #fbf6ec;
+    --ow-paper:        #ffffff;
+    --ow-ink:          #2d2418;
+    --ow-ink-soft:     #6b5d4a;
+    --ow-ink-faint:    #9a8d77;
+    --ow-navy:         #0c3a4a;
+    --ow-navy-soft:    #1a5468;
+    --ow-gold:         #c9a87c;
+    --ow-gold-soft:    #e8dec4;
+    --ow-rose:         #ab4232;
+    --ow-line:         #e8dec4;
   }
 
   * { box-sizing: border-box; }
@@ -463,6 +477,214 @@
     margin-top: 80px;
   }
   .f-footer a { color: var(--f-text-muted); }
+
+  /* ─── Curator lead form (embedded in Curator card) ─── */
+  .ow-curator-form {
+    margin-top: 18px;
+    padding-top: 22px;
+    border-top: 1px dashed var(--ow-line);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .ow-curator-form .cf-heading {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--ow-gold);
+    margin-bottom: 2px;
+  }
+  .ow-curator-form .cf-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .ow-curator-form input,
+  .ow-curator-form select,
+  .ow-curator-form textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--ow-line);
+    border-radius: 6px;
+    background: var(--ow-cream-2);
+    color: var(--ow-ink);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.4;
+    box-sizing: border-box;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .ow-curator-form input:focus,
+  .ow-curator-form select:focus,
+  .ow-curator-form textarea:focus {
+    outline: none;
+    border-color: var(--ow-navy);
+    background: var(--ow-paper);
+  }
+  .ow-curator-form textarea {
+    resize: vertical;
+    min-height: 70px;
+    font-family: inherit;
+  }
+  .ow-curator-form .cf-honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+  .ow-curator-form .cf-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+  .ow-curator-form button {
+    background: var(--ow-navy);
+    color: #fff;
+    border: none;
+    padding: 11px 22px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .ow-curator-form button:hover:not(:disabled) {
+    background: var(--ow-navy-soft);
+  }
+  .ow-curator-form button:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .ow-curator-form button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .ow-curator-form .cf-secondary {
+    color: var(--ow-navy);
+    font-size: 13px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--ow-navy);
+    padding-bottom: 1px;
+    text-decoration: none;
+  }
+  .ow-curator-form .cf-secondary:hover {
+    color: var(--ow-rose);
+    border-color: var(--ow-rose);
+  }
+  .ow-curator-form .cf-msg {
+    font-size: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    line-height: 1.45;
+    display: none;
+  }
+  .ow-curator-form .cf-msg.cf-success {
+    display: block;
+    background: #ecf6ee;
+    color: #1e5b2c;
+    border: 1px solid #c7e3cd;
+  }
+  .ow-curator-form .cf-msg.cf-error {
+    display: block;
+    background: #fdecea;
+    color: #8a2a1f;
+    border: 1px solid #f3c2bb;
+  }
+  .ow-curator-form .cf-thanks {
+    background: var(--ow-cream-2);
+    border: 1px solid var(--ow-gold-soft);
+    border-radius: 6px;
+    padding: 16px;
+    font-size: 13px;
+    color: var(--ow-ink);
+    line-height: 1.55;
+    display: none;
+  }
+  .ow-curator-form .cf-thanks.visible { display: block; }
+  .ow-curator-form .cf-thanks strong { color: var(--ow-navy); }
+
+  /* ─── Services needed (checkbox grid) ─── */
+  .ow-curator-form .cf-services {
+    margin-top: 2px;
+  }
+  .ow-curator-form .cf-services-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ow-ink);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+  .ow-curator-form .cf-services-label .req {
+    color: var(--ow-rose);
+    margin-left: 2px;
+  }
+  .ow-curator-form .cf-services-label .hint {
+    display: block;
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--ow-ink-soft);
+    margin-top: 2px;
+    letter-spacing: 0.2px;
+  }
+  .ow-curator-form .cf-services-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+  }
+  @media (max-width: 600px) {
+    .ow-curator-form .cf-services-grid { grid-template-columns: 1fr; }
+  }
+  .ow-curator-form .cf-service-opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: var(--ow-cream-2);
+    border: 1px solid var(--ow-line);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--ow-ink);
+    line-height: 1.3;
+    transition: background 0.12s, border-color 0.12s;
+    user-select: none;
+  }
+  .ow-curator-form .cf-service-opt:hover {
+    border-color: var(--ow-navy);
+    background: var(--ow-paper);
+  }
+  .ow-curator-form .cf-service-opt input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--ow-navy);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .ow-curator-form .cf-service-opt.checked {
+    background: var(--ow-paper);
+    border-color: var(--ow-navy);
+    box-shadow: inset 0 0 0 1px var(--ow-navy);
+  }
+  .ow-curator-form .cf-services-other {
+    margin-top: 8px;
+    display: none;
+  }
+  .ow-curator-form .cf-services-other.visible {
+    display: block;
+  }
+
+  @media (max-width: 600px) {
+    .ow-curator-form .cf-row { grid-template-columns: 1fr; }
+  }
+
+
 </style>
 </head>
 <body>
@@ -591,74 +813,85 @@
   </div>
 </section>
 
-<!-- ============================== APPLY ============================== -->
+<!-- ============================== APPLY (unified Curator lead form) ============================== -->
 <section class="f-section" id="apply" style="padding-top: 30px;">
   <div class="f-apply">
-    <div id="apply-form-host">
-      <div class="f-section-label" style="text-align:left;">Apply for NIMBY for Founders</div>
-      <h2>Tell us what you're <em>building.</em></h2>
-      <p class="f-section-sub">A few quick fields. We'll respond within two working days.</p>
 
-      <form id="apply-form" novalidate>
-        <div class="f-form-row">
-          <label for="f-name">Startup or company name *</label>
-          <input type="text" id="f-name" name="name" required maxlength="120" />
+    <div class="f-section-label" style="text-align:left;">Apply for NIMBY for Founders</div>
+    <h2>Tell us what you're <em>building.</em></h2>
+    <p class="f-section-sub">A few quick fields. We'll respond within two working days.</p>
+
+    <!-- The unified Curator lead form. Identical to the one on onewindow.info. -->
+    <form class="ow-curator-form" id="curator-lead-form" novalidate style="background: var(--ow-paper); border: 1px solid var(--ow-line); border-radius: var(--f-r-lg); padding: 24px; margin-top: 18px;">
+      <div class="cf-heading">Get started — leave your details</div>
+
+      <div class="cf-row">
+        <input type="text" name="name" id="cf-name" placeholder="Your name *" autocomplete="name" required maxlength="120">
+        <input type="email" name="email" id="cf-email" placeholder="Email *" autocomplete="email" required maxlength="200">
+      </div>
+
+      <div class="cf-row">
+        <input type="tel" name="phone" id="cf-phone" placeholder="Phone (optional)" autocomplete="tel" maxlength="40">
+        <select name="business_type" id="cf-business-type">
+          <option value="">Business type (optional)</option>
+          <option value="Sole proprietorship">Sole proprietorship</option>
+          <option value="Partnership (AOP)">Partnership (AOP)</option>
+          <option value="Private Limited (SECP)">Private Limited (SECP)</option>
+          <option value="Single Member Company">Single Member Company</option>
+          <option value="Not sure yet">Not sure yet</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div class="cf-row">
+        <select name="stage" id="cf-stage">
+          <option value="">Where are you today? (optional)</option>
+          <option value="idea">Just an idea</option>
+          <option value="mvp">Building the MVP</option>
+          <option value="pre_revenue">Pre-revenue / launching soon</option>
+          <option value="post_revenue">Already earning revenue</option>
+        </select>
+        <span></span>
+      </div>
+
+      <!-- What services do you need? (required, multi-select) -->
+      <div class="cf-services">
+        <div class="cf-services-label">
+          What do you need help with?<span class="req">*</span>
+          <span class="hint">Tick all that apply &mdash; we'll route you to the right CPA.</span>
         </div>
-
-        <div class="f-form-grid">
-          <div class="f-form-row">
-            <label for="f-founder-name">Your name *</label>
-            <input type="text" id="f-founder-name" name="founder_name" required maxlength="120" />
-          </div>
-          <div class="f-form-row">
-            <label for="f-founder-email">Your email *</label>
-            <input type="email" id="f-founder-email" name="founder_email" required maxlength="200" />
-          </div>
+        <div class="cf-services-grid" id="cf-services-grid">
+          <label class="cf-service-opt"><input type="checkbox" name="services" value="company_incorporation"> Company incorporation</label>
+          <label class="cf-service-opt"><input type="checkbox" name="services" value="fbr_ntn">                FBR registration (NTN)</label>
+          <label class="cf-service-opt"><input type="checkbox" name="services" value="ngo_section_42">         NGO setup (Section 42)</label>
+          <label class="cf-service-opt"><input type="checkbox" name="services" value="ubo_filing">             UBO filing</label>
+          <label class="cf-service-opt"><input type="checkbox" name="services" value="sales_tax">              Sales tax registration</label>
+          <label class="cf-service-opt"><input type="checkbox" name="services" value="trade_marks">            Trade marks</label>
+          <label class="cf-service-opt"><input type="checkbox" name="services" value="audit">                  Audit</label>
+          <label class="cf-service-opt"><input type="checkbox" name="services" value="other">                  Other</label>
         </div>
-
-        <div class="f-form-grid">
-          <div class="f-form-row">
-            <label for="f-founder-phone">Phone (optional)</label>
-            <input type="text" id="f-founder-phone" name="founder_phone" maxlength="40" />
-          </div>
-          <div class="f-form-row">
-            <label for="f-industry">Industry / sector</label>
-            <input type="text" id="f-industry" name="industry" maxlength="80" placeholder="e.g. SaaS, retail, agri" />
-          </div>
+        <div class="cf-services-other" id="cf-services-other-wrap">
+          <input type="text" name="services_other" id="cf-services-other" placeholder="Tell us what you need&hellip;" maxlength="240">
         </div>
+      </div>
 
-        <div class="f-form-grid">
-          <div class="f-form-row">
-            <label for="f-stage">Where are you today?</label>
-            <select id="f-stage" name="stage_when_acquired">
-              <option value="">—</option>
-              <option value="idea">Just an idea</option>
-              <option value="mvp">Building the MVP</option>
-              <option value="pre_revenue">Pre-revenue / launching soon</option>
-              <option value="post_revenue">Already earning revenue</option>
-            </select>
-          </div>
-          <div class="f-form-row">
-            <label for="f-entity">Entity type (if you have a preference)</label>
-            <select id="f-entity" name="entity_type_planned">
-              <option value="">— Help me decide —</option>
-              <option value="private_ltd">Private Limited</option>
-              <option value="sole_prop">Sole Proprietorship</option>
-              <option value="partnership">Partnership</option>
-              <option value="aop">AOP</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-        </div>
+      <textarea name="message" id="cf-message" placeholder="Tell us about what you're building. What are you building? Who's it for? Where are you stuck?" maxlength="2000"></textarea>
 
-        <div class="f-form-row">
-          <label for="f-pitch">Tell us about it *</label>
-          <textarea id="f-pitch" name="pitch" required maxlength="1500" placeholder="What are you building? Who's it for? Where are you stuck?"></textarea>
-        </div>
+      <!-- Honeypot -->
+      <input type="text" name="website" id="cf-website" class="cf-honeypot" tabindex="-1" autocomplete="off">
 
-        <button type="submit" class="f-form-submit" id="apply-submit">Submit application</button>
-      </form>
-    </div>
+      <div class="cf-msg" id="cf-msg"></div>
+
+      <div class="cf-actions">
+        <button type="submit" id="cf-submit">Submit application &rarr;</button>
+      </div>
+
+      <div class="cf-thanks" id="cf-thanks">
+        <strong>Thanks &mdash; we've got your application.</strong><br>
+        A CPA from our team will reach out within one working day to talk through what you're building and walk you through the free setup.
+      </div>
+    </form>
+
   </div>
 </section>
 
@@ -670,121 +903,115 @@
 
 <!-- ============================== SCRIPTS ============================== -->
 <!--
-  Self-contained: this page does NOT depend on /js/nimby-core.js.
-  Anonymous applications use a direct Supabase REST call with the public anon key.
+  Unified Curator lead form submission. Identical to the one on
+  onewindow.info/index.html — posts to the onewindow-lead-handler
+  worker which writes into onewindow_curator_leads.
 -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function () {
   'use strict';
 
-  var SUPABASE_URL = 'https://mnsqveegyfjzqqlgtatj.supabase.co';
-  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1uc3F2ZWVneWZqenFxbGd0YXRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NTAzNjEsImV4cCI6MjA5MzMyNjM2MX0.I2u1pzReErcDCxwMJh6qYV2TWnZYaQO-tpngAZVI-RA';
+  // POST endpoint for the lead form
+  const WORKER_URL = 'https://onewindow-lead-handler.tariiq-haasan.workers.dev/submit';
 
-  var sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  const form     = document.getElementById('curator-lead-form');
+  const submit   = document.getElementById('cf-submit');
+  const msg      = document.getElementById('cf-msg');
+  const thanks   = document.getElementById('cf-thanks');
 
-  function isEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v || ''); }
-  function escapeHtml(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  if (!form) return;
+
+  function showError(text) {
+    msg.textContent = text;
+    msg.className = 'cf-msg cf-error';
+  }
+  function clearMsg() {
+    msg.textContent = '';
+    msg.className = 'cf-msg';
   }
 
-  function setError(rowEl, message) {
-    rowEl.classList.add('is-error');
-    var existing = rowEl.querySelector('.f-error-text');
-    if (existing) existing.remove();
-    var msg = document.createElement('div');
-    msg.className = 'f-error-text';
-    msg.textContent = message;
-    rowEl.appendChild(msg);
-  }
+  // ─── Services checkbox UX ───
+  const serviceBoxes = form.querySelectorAll('input[name="services"]');
+  const otherWrap    = document.getElementById('cf-services-other-wrap');
+  const otherInput   = document.getElementById('cf-services-other');
 
-  function clearErrors(form) {
-    form.querySelectorAll('.is-error').forEach(function (el) { el.classList.remove('is-error'); });
-    form.querySelectorAll('.f-error-text').forEach(function (el) { el.remove(); });
-  }
+  serviceBoxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      const label = cb.closest('.cf-service-opt');
+      if (label) label.classList.toggle('checked', cb.checked);
+      if (cb.value === 'other') {
+        otherWrap.classList.toggle('visible', cb.checked);
+        if (!cb.checked) otherInput.value = '';
+        if (cb.checked) setTimeout(() => otherInput.focus(), 50);
+      }
+    });
+  });
 
-  function showSuccess() {
-    var host = document.getElementById('apply-form-host');
-    host.innerHTML =
-      '<div class="f-success">' +
-        '<div class="f-success-icon">✓</div>' +
-        '<h3>Application received.</h3>' +
-        '<p>Thanks. We\'ll be in touch within two working days at the email you provided.</p>' +
-      '</div>';
-    // Scroll the success message into view
-    host.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    clearMsg();
 
-  function showFailure(message) {
-    var host = document.getElementById('apply-form-host');
-    host.innerHTML =
-      '<div class="f-failure">' +
-        '<div class="f-failure-icon">!</div>' +
-        '<h3>We couldn\'t submit that.</h3>' +
-        '<p>' + escapeHtml(message || 'Something went wrong. Please try again, or email us directly.') + '</p>' +
-        '<p style="margin-top:18px;"><a href="#apply" onclick="location.reload(); return false;">Try again</a></p>' +
-      '</div>';
-  }
+    const services = Array.from(serviceBoxes)
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
 
-  document.addEventListener('DOMContentLoaded', function () {
-    var form = document.getElementById('apply-form');
-    var btn = document.getElementById('apply-submit');
+    const payload = {
+      name:           document.getElementById('cf-name').value.trim(),
+      email:          document.getElementById('cf-email').value.trim(),
+      phone:          document.getElementById('cf-phone').value.trim(),
+      business_type:  document.getElementById('cf-business-type').value,
+      stage:          document.getElementById('cf-stage') ? document.getElementById('cf-stage').value : '',
+      services_requested: services,
+      services_other: services.includes('other') ? otherInput.value.trim() : '',
+      message:        document.getElementById('cf-message').value.trim(),
+      website:        document.getElementById('cf-website').value, // honeypot
+    };
 
-    if (!sb) {
-      console.error('[Founders] Supabase client failed to load');
+    if (!payload.name || payload.name.length < 2) {
+      showError('Please enter your name.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+      showError('Please enter a valid email address.');
+      return;
+    }
+    if (services.length === 0) {
+      showError('Please tick at least one service you need help with.');
+      return;
+    }
+    if (services.includes('other') && !payload.services_other) {
+      showError('You ticked "Other" — please tell us what you need.');
+      otherInput.focus();
       return;
     }
 
-    form.addEventListener('submit', async function (e) {
-      e.preventDefault();
-      clearErrors(form);
+    submit.disabled = true;
+    const originalLabel = submit.textContent;
+    submit.textContent = 'Sending…';
 
-      var get = function (name) {
-        var el = form.querySelector('[name="' + name + '"]');
-        return el ? (el.value || '').trim() : '';
-      };
+    try {
+      const res = await fetch(WORKER_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+      });
 
-      var payload = {
-        name:                get('name'),
-        founder_name:        get('founder_name'),
-        founder_email:       get('founder_email'),
-        founder_phone:       get('founder_phone') || null,
-        pitch:               get('pitch') || null,
-        industry:            get('industry') || null,
-        stage_when_acquired: get('stage_when_acquired') || null,
-        entity_type_planned: get('entity_type_planned') || null,
-        jurisdiction:        'PK',
-        plan_type:           'founder',
-        status:              'new',
-        current_stage:       'inquiry'
-      };
+      const data = await res.json().catch(() => ({}));
 
-      // Validation
-      var ok = true;
-      function rowOf(name) { return form.querySelector('[name="' + name + '"]').closest('.f-form-row'); }
-      if (!payload.name) { setError(rowOf('name'), 'Required'); ok = false; }
-      if (!payload.founder_name) { setError(rowOf('founder_name'), 'Required'); ok = false; }
-      if (!isEmail(payload.founder_email)) { setError(rowOf('founder_email'), 'Please enter a valid email'); ok = false; }
-      if (!payload.pitch) { setError(rowOf('pitch'), 'Tell us a little about what you\'re building'); ok = false; }
-      if (!ok) return;
-
-      btn.disabled = true;
-      var originalLabel = btn.textContent;
-      btn.textContent = 'Submitting…';
-
-      try {
-        var result = await sb.from('nimby_startup_leads').insert(payload).select().single();
-        if (result.error) throw result.error;
-        showSuccess();
-      } catch (err) {
-        console.error('[Founders] Insert failed:', err);
-        btn.disabled = false;
-        btn.textContent = originalLabel;
-        showFailure((err && (err.message || err.hint)) || 'Please try again in a moment.');
+      if (res.ok && data.ok) {
+        const toHide = form.querySelectorAll('.cf-row, .cf-services, textarea, .cf-actions, .cf-heading, .cf-msg');
+        toHide.forEach(function (el) { el.style.display = 'none'; });
+        thanks.classList.add('visible');
+      } else {
+        showError(data.error || 'Something went wrong. Please try again, or email hello@northnextventures.com.');
+        submit.disabled = false;
+        submit.textContent = originalLabel;
       }
-    });
+    } catch (err) {
+      showError('Network error. Please check your connection and try again.');
+      submit.disabled = false;
+      submit.textContent = originalLabel;
+    }
   });
 })();
 </script>
