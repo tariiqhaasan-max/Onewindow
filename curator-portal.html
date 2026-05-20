@@ -407,6 +407,44 @@
   .task-client-flag.asked-curator { background: #d9ebd9; color: #1e5b2c; }
   .task-client-flag.self-handling { background: #f5e3c4; color: #7d5a14; }
 
+  /* ─── Activity badges (Tasks / Documents / Messages) ─── */
+  /* The number bubble used in the sidebar, in drawer tab pills, and in client list rows. */
+  .act-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    margin-left: 8px;
+    background: var(--rose);
+    color: #fff;
+    border-radius: 9px;
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .act-badge.zero { display: none; }
+  /* On the drawer's filter-pill (which has its own dark/light state), invert when the pill is active. */
+  .filter-pill.active .act-badge {
+    background: var(--rose);
+    color: #fff;
+  }
+  /* In the clients table row — show as a compact pill in its own cell */
+  .client-activity-cell {
+    white-space: nowrap;
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .client-activity-cell .act-badge {
+    margin-left: 4px;
+    margin-right: 4px;
+  }
+
   .app-main {
     display: grid;
     grid-template-columns: 220px 1fr;
@@ -1933,6 +1971,15 @@
       const _nbWrap = $('notifWrap');
       if (_nbWrap) _nbWrap.style.display = 'none';
       loadLeads();
+      // Preload clients so activity badges can compute even before
+      // the advisor visits the Clients tab. This is what feeds the
+      // activityMap that drives the sidebar count and drawer badges.
+      if (typeof loadClients === 'function') {
+        loadClients().then(() => {
+          if (typeof window.__refreshActivity === 'function') window.__refreshActivity();
+          if (typeof subscribeActivityChannel === 'function') subscribeActivityChannel();
+        });
+      }
     } else {
       // ── CLIENT MODE ──
       isAdvisorMode = false;
@@ -1965,6 +2012,13 @@
     $('boot').classList.add('hidden');
     $('authShell').style.display = 'none';
     document.body.classList.add('is-app');
+
+    // Compute initial activity badges (after caches finish populating)
+    setTimeout(() => {
+      if (typeof window.__refreshActivity === 'function') {
+        window.__refreshActivity();
+      }
+    }, 600);
   }
 
   // Hide panes that don't belong to the current role
@@ -2435,6 +2489,7 @@
           <tr>
             <th>Name & email</th>
             <th>Business</th>
+            <th>Activity</th>
             <th>Status</th>
             <th>Joined</th>
             <th>Last active</th>
@@ -2443,6 +2498,21 @@
         <tbody>`;
     filtered.forEach(client => {
       const status = client.status || 'prospect';
+      const act = activityMap[client.id] || { tasks: 0, documents: 0, messages: 0 };
+      const actT = act.tasks     || 0;
+      const actD = act.documents || 0;
+      const actM = act.messages  || 0;
+      const totalAct = actT + actD + actM;
+      let activityCell;
+      if (totalAct === 0) {
+        activityCell = '<span class="col-meta">—</span>';
+      } else {
+        const parts = [];
+        if (actT > 0) parts.push(`<span title="${actT} task action${actT===1?'':'s'}">T${badgeHTML(actT)}</span>`);
+        if (actD > 0) parts.push(`<span title="${actD} new upload${actD===1?'':'s'}">D${badgeHTML(actD)}</span>`);
+        if (actM > 0) parts.push(`<span title="${actM} new message${actM===1?'':'s'}">M${badgeHTML(actM)}</span>`);
+        activityCell = parts.join(' ');
+      }
       html += `
         <tr onclick="openClientDrawer('${client.id}')">
           <td>
@@ -2453,6 +2523,7 @@
             <div>${escapeHtml(client.business_name || '—')}</div>
             <div class="col-meta">${escapeHtml(client.business_type || '')}</div>
           </td>
+          <td class="client-activity-cell">${activityCell}</td>
           <td><span class="pill client-${status}">${escapeHtml(status)}</span></td>
           <td class="col-tight col-meta">${fmtDate(client.created_at)}</td>
           <td class="col-tight col-meta">${client.last_active_at ? timeAgo(client.last_active_at) : '—'}</td>
@@ -3772,6 +3843,375 @@
       if (name === 'messages') loadClientMessages();
     }
   };
+
+  // ════════════════════════════════════════════════════════════════════
+  //  ACTIVITY BADGES — Tasks / Documents / Messages
+  // ════════════════════════════════════════════════════════════════════
+  //
+  //  Computes "unseen item" counts per (client × tab) for the current
+  //  user. Drives red number badges in:
+  //    • Client mode  — sidebar items: Tasks / Documents / Messages
+  //    • Advisor mode — drawer tab pills + clients-table row + sidebar
+  //
+  //  "Seen" is stamped via the curator_mark_workspace_seen RPC whenever
+  //  a tab is opened. An item is "unseen" if its creation/event time is
+  //  strictly later than the user's last_seen_at for that tab.
+  //
+  //  Semantics per tab:
+  //    tasks      — count tasks where client_action_at > last_seen (advisor view),
+  //                 or where the OPPOSITE party's create/update > last_seen.
+  //    documents  — count rows in curator_files newer than last_seen,
+  //                 uploaded by the OPPOSITE role.
+  //    messages   — count rows in curator_messages newer than last_seen,
+  //                 sent by the OPPOSITE role.
+  //
+  //  On first ever view, last_seen_at doesn't exist. We treat that as
+  //  "epoch" so ALL existing activity shows as unseen — which matches
+  //  the user's mental model ("I just arrived, show me everything new").
+  // ════════════════════════════════════════════════════════════════════
+
+  // seenMap keyed by `${client_id}::${tab}` → last_seen_at timestamp (ISO)
+  let seenMap = {};
+  // activityMap keyed by client_id → { tasks: N, documents: N, messages: N }
+  let activityMap = {};
+
+  async function loadSeenMap() {
+    if (!currentUser) return;
+    const { data, error } = await sb
+      .from('curator_workspace_seen')
+      .select('client_id, tab, last_seen_at')
+      .eq('user_id', currentUser.id);
+    if (error) { console.warn('seen load failed:', error.message); return; }
+    seenMap = {};
+    (data || []).forEach(r => {
+      seenMap[`${r.client_id}::${r.tab}`] = r.last_seen_at;
+    });
+  }
+
+  function seenAt(clientId, tab) {
+    return seenMap[`${clientId}::${tab}`] || '1970-01-01T00:00:00Z';
+  }
+
+  // Stamp a tab as seen NOW for current user × client × tab.
+  // Updates both server and local seenMap. Then refreshes badges.
+  async function markTabSeen(clientId, tab) {
+    if (!currentUser || !clientId) return;
+    const nowIso = new Date().toISOString();
+    seenMap[`${clientId}::${tab}`] = nowIso;
+    // Recompute the activity count for THIS client immediately so the
+    // badge clears without waiting for the round-trip.
+    if (activityMap[clientId]) {
+      activityMap[clientId][tab] = 0;
+    }
+    refreshAllBadgeUI();
+    // Server stamp (fire and forget — UI already updated)
+    sb.rpc('curator_mark_workspace_seen', { p_client_id: clientId, p_tab: tab })
+      .then(({ error }) => {
+        if (error) console.warn('mark_seen failed:', error.message);
+      });
+  }
+
+  // ─── Compute counts (advisor mode) ───
+  // For each client visible to the advisor, count unseen items across the 3 tabs.
+  async function computeActivityForAdvisor() {
+    if (!isAdvisorMode || !currentUser) return;
+    if (!clientsCache || clientsCache.length === 0) return;
+
+    const clientIds = clientsCache.map(c => c.id);
+    if (clientIds.length === 0) return;
+
+    // Reset
+    activityMap = {};
+    clientIds.forEach(cid => { activityMap[cid] = { tasks: 0, documents: 0, messages: 0 }; });
+
+    // Build per-client cutoff timestamps for each tab
+    const cutoffTasks    = {};
+    const cutoffDocs     = {};
+    const cutoffMessages = {};
+    clientIds.forEach(cid => {
+      cutoffTasks[cid]    = seenAt(cid, 'tasks');
+      cutoffDocs[cid]     = seenAt(cid, 'documents');
+      cutoffMessages[cid] = seenAt(cid, 'messages');
+    });
+
+    // We use the OLDEST cutoff across all clients as a coarse server-side
+    // filter, then refine per-client client-side. Saves a query per client.
+    const minCutoff = (arr) => arr.reduce((a, b) => a < b ? a : b);
+    const oldestTasksCutoff    = minCutoff(Object.values(cutoffTasks));
+    const oldestDocsCutoff     = minCutoff(Object.values(cutoffDocs));
+    const oldestMessagesCutoff = minCutoff(Object.values(cutoffMessages));
+
+    // ─── Tasks: events from CLIENT side that advisor hasn't seen ───
+    // An advisor cares about: tasks where the client took action (client_action_at)
+    // OR completed (completed_at when completed by the client)
+    // — both since the advisor last looked.
+    // We approximate "client activity" as: client_action_at IS NOT NULL AND > cutoff
+    try {
+      const { data: tasks } = await sb
+        .from('curator_tasks')
+        .select('client_id, client_action_at')
+        .in('client_id', clientIds)
+        .not('client_action_at', 'is', null)
+        .gt('client_action_at', oldestTasksCutoff);
+      (tasks || []).forEach(t => {
+        if (t.client_action_at > cutoffTasks[t.client_id]) {
+          activityMap[t.client_id].tasks += 1;
+        }
+      });
+    } catch (e) { console.warn('task activity scan failed:', e); }
+
+    // ─── Documents: uploads from CLIENT side advisor hasn't seen ───
+    try {
+      const { data: docs } = await sb
+        .from('curator_files')
+        .select('client_id, uploader_role, created_at')
+        .in('client_id', clientIds)
+        .eq('uploader_role', 'client')
+        .gt('created_at', oldestDocsCutoff);
+      (docs || []).forEach(d => {
+        if (d.created_at > cutoffDocs[d.client_id]) {
+          activityMap[d.client_id].documents += 1;
+        }
+      });
+    } catch (e) { console.warn('doc activity scan failed:', e); }
+
+    // ─── Messages: messages from CLIENT side advisor hasn't seen ───
+    try {
+      const { data: msgs } = await sb
+        .from('curator_messages')
+        .select('client_id, sender_role, created_at')
+        .in('client_id', clientIds)
+        .eq('sender_role', 'client')
+        .gt('created_at', oldestMessagesCutoff);
+      (msgs || []).forEach(m => {
+        if (m.created_at > cutoffMessages[m.client_id]) {
+          activityMap[m.client_id].messages += 1;
+        }
+      });
+    } catch (e) { console.warn('msg activity scan failed:', e); }
+
+    refreshAllBadgeUI();
+  }
+
+  // ─── Compute counts (client mode) ───
+  // For the single client (the logged-in user), count unseen items from
+  // the ADVISOR side that the client hasn't looked at yet.
+  async function computeActivityForClient() {
+    if (isAdvisorMode || !currentClient) return;
+    const cid = currentClient.id;
+    activityMap[cid] = { tasks: 0, documents: 0, messages: 0 };
+
+    const cutoffTasks    = seenAt(cid, 'tasks');
+    const cutoffDocs     = seenAt(cid, 'documents');
+    const cutoffMessages = seenAt(cid, 'messages');
+
+    // Tasks: advisor-created tasks (i.e. anything the client sees as new on their list)
+    // that were created after last seen.
+    try {
+      const { data: tasks } = await sb
+        .from('curator_tasks')
+        .select('id, created_at')
+        .eq('client_id', cid)
+        .gt('created_at', cutoffTasks);
+      activityMap[cid].tasks = (tasks || []).length;
+    } catch (e) { console.warn('client task activity failed:', e); }
+
+    // Documents: uploads by advisor that client hasn't seen
+    try {
+      const { data: docs } = await sb
+        .from('curator_files')
+        .select('id, created_at')
+        .eq('client_id', cid)
+        .eq('uploader_role', 'advisor')
+        .gt('created_at', cutoffDocs);
+      activityMap[cid].documents = (docs || []).length;
+    } catch (e) { console.warn('client doc activity failed:', e); }
+
+    // Messages: messages from advisor client hasn't read
+    try {
+      const { data: msgs } = await sb
+        .from('curator_messages')
+        .select('id, created_at')
+        .eq('client_id', cid)
+        .eq('sender_role', 'advisor')
+        .gt('created_at', cutoffMessages);
+      activityMap[cid].messages = (msgs || []).length;
+    } catch (e) { console.warn('client msg activity failed:', e); }
+
+    refreshAllBadgeUI();
+  }
+
+  // ─── DOM helpers ───
+  function badgeHTML(n) {
+    const cls = n > 0 ? '' : ' zero';
+    return `<span class="act-badge${cls}">${n > 99 ? '99+' : n}</span>`;
+  }
+
+  function refreshAllBadgeUI() {
+    if (isAdvisorMode) {
+      refreshAdvisorBadges();
+    } else {
+      refreshClientBadges();
+    }
+  }
+
+  function refreshAdvisorBadges() {
+    // Sum across all clients for the Clients sidebar item
+    let totalClientsWithActivity = 0;
+    let _totalEvents = 0;
+    Object.values(activityMap).forEach(a => {
+      const sum = (a.tasks || 0) + (a.documents || 0) + (a.messages || 0);
+      if (sum > 0) totalClientsWithActivity += 1;
+      _totalEvents += sum;
+    });
+
+    // 1) Sidebar — Clients item
+    const clientsNavItem = document.querySelector('.app-nav-item[data-tab="clients"]');
+    if (clientsNavItem) {
+      // Strip any existing badge
+      const old = clientsNavItem.querySelector('.act-badge');
+      if (old) old.remove();
+      if (totalClientsWithActivity > 0) {
+        clientsNavItem.insertAdjacentHTML('beforeend', badgeHTML(totalClientsWithActivity));
+      }
+    }
+
+    // 2) Clients table — add small badges per row.
+    //    The clients table renderer is renderClients() which builds <tr>s with
+    //    `data-client-row="<id>"` (we'll add that attribute in a follow-up edit).
+    //    Until then we re-render the table when activity changes — guarded so
+    //    we don't infinite-loop.
+    if (typeof renderClients === 'function') {
+      renderClients(); // re-render will read activityMap
+    }
+
+    // 3) Drawer tab pills — only meaningful if a client drawer is open
+    if (cdrawerCurrentClient) {
+      const a = activityMap[cdrawerCurrentClient.id] || { tasks: 0, documents: 0, messages: 0 };
+      setDrawerPillBadge('tasks',    a.tasks);
+      setDrawerPillBadge('docs',     a.documents);
+      setDrawerPillBadge('messages', a.messages);
+    }
+  }
+
+  function refreshClientBadges() {
+    if (!currentClient) return;
+    const a = activityMap[currentClient.id] || { tasks: 0, documents: 0, messages: 0 };
+    setClientSidebarBadge('tasks',     a.tasks);
+    setClientSidebarBadge('documents', a.documents);
+    setClientSidebarBadge('messages',  a.messages);
+  }
+
+  function setClientSidebarBadge(tabName, n) {
+    const item = document.querySelector(`.app-nav-item[data-tab="${tabName}"]`);
+    if (!item) return;
+    const old = item.querySelector('.act-badge');
+    if (old) old.remove();
+    if (n > 0) {
+      item.insertAdjacentHTML('beforeend', badgeHTML(n));
+    }
+  }
+
+  function setDrawerPillBadge(cdrawerTab, n) {
+    const pill = document.querySelector(`[data-cdrawer-tab="${cdrawerTab}"]`);
+    if (!pill) return;
+    const old = pill.querySelector('.act-badge');
+    if (old) old.remove();
+    if (n > 0) {
+      pill.insertAdjacentHTML('beforeend', badgeHTML(n));
+    }
+  }
+
+  // ─── Hooks ───
+  // After auth + clients/tasks/docs/msgs are loaded, compute activity.
+  async function refreshActivity() {
+    await loadSeenMap();
+    if (isAdvisorMode) {
+      await computeActivityForAdvisor();
+    } else {
+      await computeActivityForClient();
+    }
+  }
+
+  // Expose for refresh hooks elsewhere in this IIFE
+  window.__refreshActivity = refreshActivity;
+
+  // Hook into client-side switchTab to stamp seen + clear local badge
+  const _origSwitchTab2 = window.switchTab;
+  window.switchTab = function (name) {
+    _origSwitchTab2(name);
+    if (!isAdvisorMode && currentClient) {
+      const tabMap = { tasks: 'tasks', documents: 'documents', messages: 'messages' };
+      if (tabMap[name]) markTabSeen(currentClient.id, tabMap[name]);
+    }
+  };
+
+  // Hook into advisor drawer tab clicks — stamp seen for the current client/tab
+  document.addEventListener('click', (e) => {
+    if (!e.target.matches('[data-cdrawer-tab]')) return;
+    if (!isAdvisorMode || !cdrawerCurrentClient) return;
+    const dt = e.target.dataset.cdrawerTab; // 'tasks' | 'docs' | 'messages'
+    const dbTab = dt === 'docs' ? 'documents' : dt;
+    markTabSeen(cdrawerCurrentClient.id, dbTab);
+  });
+
+  // Hook into opening the client drawer — refresh badges so the pills reflect
+  // any updates that came in since the clients list was last loaded
+  const _origOpenClientDrawer2 = window.openClientDrawer;
+  window.openClientDrawer = function (clientId) {
+    _origOpenClientDrawer2(clientId);
+    // Render badges on the pills as soon as the drawer opens
+    if (isAdvisorMode) {
+      // Allow the drawer DOM to settle, then refresh
+      setTimeout(() => refreshAllBadgeUI(), 0);
+      // Treat the default tab (tasks) as opened: stamp it.
+      markTabSeen(clientId, 'tasks');
+    }
+  };
+
+  // ─── Realtime: when a new message/file/task action comes in, refresh badges ───
+  let _activityChannel = null;
+  function subscribeActivityChannel() {
+    if (!currentUser) return;
+    if (_activityChannel) sb.removeChannel(_activityChannel);
+    _activityChannel = sb.channel('act-' + currentUser.id)
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'curator_messages' },
+        () => refreshActivity())
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'curator_files' },
+        () => refreshActivity())
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'curator_tasks' },
+        () => refreshActivity())
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'curator_tasks' },
+        () => refreshActivity())
+      .subscribe();
+  }
+
+  // After clients load (advisor mode), kick off activity computation
+  // and subscribe to realtime updates. We hook into switchTab below
+  // rather than reassigning loadClients (which is a function declaration
+  // and risky to override in strict mode).
+  const _origSwitchTab3 = window.switchTab;
+  window.switchTab = function (name) {
+    _origSwitchTab3(name);
+    if (isAdvisorMode && name === 'clients') {
+      // Give loadClients a moment to populate clientsCache, then refresh
+      setTimeout(() => {
+        if (typeof window.__refreshActivity === 'function') window.__refreshActivity();
+        if (!_activityChannel) subscribeActivityChannel();
+      }, 400);
+    }
+  };
+
+  // After client data loads (client mode), kick off activity too
+  if (typeof loadClientTasks === 'function') {
+    // We don't override loadClientTasks itself (it's heavily wired);
+    // instead we use the auth-success hook below to compute once and
+    // then rely on realtime updates.
+  }
 
   // ─── Init ───
   async function init() {
