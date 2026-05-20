@@ -1607,6 +1607,17 @@
             </select>
           </div>
 
+          <div class="cf-row">
+            <select name="stage" id="cf-stage">
+              <option value="">Where are you today? (optional)</option>
+              <option value="idea">Just an idea</option>
+              <option value="mvp">Building the MVP</option>
+              <option value="pre_revenue">Pre-revenue / launching soon</option>
+              <option value="post_revenue">Already earning revenue</option>
+            </select>
+            <span></span>
+          </div>
+
           <!-- What services do you need? (required, multi-select) -->
           <div class="cf-services">
             <div class="cf-services-label">
@@ -2017,6 +2028,7 @@
         email:          document.getElementById('cf-email').value.trim(),
         phone:          document.getElementById('cf-phone').value.trim(),
         business_type:  document.getElementById('cf-business-type').value,
+        stage:          document.getElementById('cf-stage') ? document.getElementById('cf-stage').value : '',
         services_requested: services,
         services_other: services.includes('other') ? otherInput.value.trim() : '',
         message:        document.getElementById('cf-message').value.trim(),
