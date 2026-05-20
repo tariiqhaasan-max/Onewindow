@@ -719,6 +719,13 @@
     color: #6b4a14;
     border-color: var(--gold-soft);
   }
+  .svc-chip.stage-chip {
+    background: #e8eef2;
+    color: var(--navy);
+    border-color: #cfdde2;
+    font-weight: 700;
+    margin-left: 6px;
+  }
   /* Larger chip variant for the lead drawer */
   .svc-chips-lg .svc-chip {
     font-size: 11.5px;
@@ -2126,6 +2133,18 @@
     other:                 'Other'
   };
 
+  const LEAD_STAGE_LABELS = {
+    idea:         'Idea',
+    mvp:          'MVP',
+    pre_revenue:  'Pre-revenue',
+    post_revenue: 'Earning revenue'
+  };
+
+  function renderStageChip(stage, large) {
+    if (!stage || !LEAD_STAGE_LABELS[stage]) return '';
+    return `<span class="svc-chip stage-chip${large ? '' : ''}">${escapeHtml(LEAD_STAGE_LABELS[stage])}</span>`;
+  }
+
   // Render the array of service codes as chips. Pass `large: true` for
   // the drawer view, default is compact for the table.
   function renderServiceChips(services, servicesOther, opts) {
@@ -2191,7 +2210,7 @@
             <div class="col-meta">${escapeHtml(lead.email)}</div>
           </td>
           <td>
-            <div>${escapeHtml(lead.business_type || '—')}</div>
+            <div>${escapeHtml(lead.business_type || '—')}${renderStageChip(lead.stage)}</div>
             <div class="col-meta">${lead.phone ? escapeHtml(lead.phone) : ''}</div>
             ${renderServiceChips(lead.services_requested, lead.services_other)}
           </td>
@@ -2271,6 +2290,10 @@
       <div class="detail-row">
         <div class="detail-label">Business</div>
         <div class="detail-value">${escapeHtml(lead.business_type || '—')}</div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">Stage</div>
+        <div class="detail-value">${lead.stage && LEAD_STAGE_LABELS[lead.stage] ? escapeHtml(LEAD_STAGE_LABELS[lead.stage]) : '<span class="muted">Not specified</span>'}</div>
       </div>
       <div class="detail-row">
         <div class="detail-label">Needs help with</div>
