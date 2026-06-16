@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Curator · A NorthNext service for Pakistani businesses</title>
+<meta name="description" content="Curator handles SECP company registration, FBR setup, ongoing compliance, and bookkeeping support — all for free to start. A CPA walks you through every step.">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream:        #fbf6ec;
+    --cream-2:      #f4ede0;
+    --paper:        #ffffff;
+    --ink:          #2d2418;
+    --ink-soft:     #6b5d4a;
+    --ink-faint:    #9a8d77;
+    --navy:         #0c3a4a;
+    --navy-soft:    #1a5468;
+    --gold:         #c9a87c;
+    --gold-soft:    #e8dec4;
+    --rose:         #ab4232;
+    --line:         #e8dec4;
+    --line-soft:    #f0e7d1;
+    --font-serif:   'Cormorant Garamond', Georgia, serif;
+    --font-sans:    'Jost', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-sans);
+    color: var(--ink);
+    background: var(--cream);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  /* ─── Top nav ─── */
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(251, 246, 236, 0.94);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 14px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-brand {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .nav-brand-mark {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: linear-gradient(135deg, #c9a87c 0%, #6b5d4a 100%);
+  }
+  .nav-brand-name {
+    font-family: var(--font-serif);
+    font-size: 12px;
+    letter-spacing: 4px;
+    color: var(--navy);
+    font-weight: 500;
+  }
+  .nav-links {
+    display: flex; align-items: center; gap: 24px;
+  }
+  .nav-link {
+    font-size: 13px;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .nav-link:hover { color: var(--navy); }
+  .nav-cta {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 8px 16px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .nav-cta:hover { background: var(--navy-soft); }
+  @media (max-width: 720px) {
+    .nav-links .nav-link { display: none; }
+  }
+
+  /* ─── Hero ─── */
+  .hero {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 80px 28px 100px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(201,168,124,0.18) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 64px;
+    align-items: center;
+    position: relative;
+  }
+  @media (max-width: 880px) {
+    .hero { padding: 56px 24px 72px; }
+    .hero-inner { grid-template-columns: 1fr; gap: 36px; }
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin: 0 0 16px;
+  }
+  .hero-title {
+    font-family: var(--font-serif);
+    font-size: 64px;
+    font-weight: 500;
+    line-height: 1.05;
+    margin: 0 0 20px;
+  }
+  @media (max-width: 880px) {
+    .hero-title { font-size: 42px; }
+  }
+  .hero-title em {
+    color: var(--gold);
+    font-style: italic;
+  }
+  .hero-body {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--gold-soft);
+    margin: 0 0 32px;
+    max-width: 480px;
+  }
+  .hero-ctas {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .btn-primary {
+    background: var(--gold);
+    color: var(--navy);
+    padding: 14px 26px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-primary:hover { background: #d4b88a; }
+  .btn-primary:active { transform: translateY(1px); }
+  .btn-secondary {
+    background: transparent;
+    color: var(--cream);
+    padding: 14px 26px;
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .btn-secondary:hover { background: rgba(201,168,124,0.12); }
+
+  /* Hero side card */
+  .hero-card {
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    border-top: 4px solid var(--gold);
+  }
+  .hero-card-eyebrow {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+  .hero-card-title {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    color: var(--navy);
+    margin: 0 0 14px;
+    font-weight: 500;
+  }
+  .hero-card-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .hero-card-list li {
+    display: flex;
+    align-items: start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--ink);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .hero-card-list li:last-child { border-bottom: none; }
+  .hero-card-check {
+    color: var(--gold);
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-weight: 700;
+  }
+  .hero-card-foot {
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin: 14px 0 0;
+    font-style: italic;
+  }
+
+  /* ─── Generic section ─── */
+  .section {
+    padding: 80px 28px;
+  }
+  .section-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+  .section-eyebrow {
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin: 0 0 12px;
+    text-align: center;
+  }
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: 44px;
+    font-weight: 500;
+    color: var(--navy);
+    text-align: center;
+    margin: 0 0 16px;
+    line-height: 1.1;
+  }
+  @media (max-width: 720px) {
+    .section { padding: 56px 22px; }
+    .section-title { font-size: 32px; }
+  }
+  .section-title em { font-style: italic; color: var(--gold); }
+  .section-lead {
+    text-align: center;
+    font-size: 17px;
+    color: var(--ink-soft);
+    max-width: 620px;
+    margin: 0 auto 48px;
+    line-height: 1.6;
+  }
+
+  /* ─── Included grid ─── */
+  .included-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+  @media (max-width: 720px) {
+    .included-grid { grid-template-columns: 1fr; }
+  }
+  .included-card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 28px;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .included-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(45, 36, 24, 0.07);
+  }
+  .included-num {
+    font-family: var(--font-serif);
+    font-style: italic;
+    color: var(--gold);
+    font-size: 26px;
+    line-height: 1;
+    margin-bottom: 14px;
+  }
+  .included-title {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    color: var(--navy);
+    margin: 0 0 10px;
+    font-weight: 500;
+  }
+  .included-body {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ─── How it works (steps) ─── */
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 26px;
+    position: relative;
+  }
+  @media (max-width: 720px) {
+    .steps-grid { grid-template-columns: 1fr; }
+  }
+  .step {
+    text-align: center;
+    padding: 0 12px;
+  }
+  .step-num {
+    font-family: var(--font-serif);
+    font-style: italic;
+    color: var(--gold);
+    font-size: 56px;
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+  .step-title {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    color: var(--navy);
+    margin: 0 0 8px;
+    font-weight: 500;
+  }
+  .step-body {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ─── Pull quote ─── */
+  .pullquote {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 64px 28px;
+    text-align: center;
+  }
+  .pullquote-text {
+    font-family: var(--font-serif);
+    font-size: 30px;
+    font-weight: 500;
+    line-height: 1.4;
+    max-width: 740px;
+    margin: 0 auto;
+  }
+  @media (max-width: 720px) {
+    .pullquote-text { font-size: 22px; }
+  }
+  .pullquote-text em { color: var(--gold); font-style: italic; }
+
+  /* ─── FAQ ─── */
+  .faq-list {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .faq-item {
+    border-bottom: 1px solid var(--line);
+    padding: 22px 0;
+    cursor: pointer;
+  }
+  .faq-item:last-child { border-bottom: none; }
+  .faq-q {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--font-serif);
+    font-size: 20px;
+    color: var(--navy);
+    font-weight: 500;
+  }
+  .faq-toggle {
+    color: var(--gold);
+    font-size: 22px;
+    font-weight: 300;
+    transition: transform 0.2s;
+  }
+  .faq-item.open .faq-toggle { transform: rotate(45deg); }
+  .faq-a {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 12px 0 0;
+    line-height: 1.7;
+    display: none;
+  }
+  .faq-item.open .faq-a { display: block; }
+
+  /* ─── Final CTA ─── */
+  .final-cta {
+    background: var(--cream-2);
+    text-align: center;
+  }
+  .final-cta .section-title { margin-bottom: 14px; }
+
+  /* ─── Footer ─── */
+  .footer {
+    background: var(--navy);
+    color: var(--gold-soft);
+    padding: 36px 28px;
+    text-align: center;
+    font-size: 12px;
+  }
+  .footer-brand {
+    font-family: var(--font-serif);
+    font-size: 13px;
+    color: var(--gold-soft);
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+  }
+  .footer-line {
+    width: 36px;
+    height: 1px;
+    background: var(--gold);
+    margin: 14px auto;
+  }
+  .footer-note {
+    font-style: italic;
+    color: var(--ink-faint);
+    color: rgba(232, 222, 196, 0.5);
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .footer a {
+    color: var(--gold);
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="#top">
+      <div class="nav-brand-mark"></div>
+      <span class="nav-brand-name">CURATOR</span>
+    </a>
+    <div class="nav-links">
+      <a class="nav-link" href="#included">What's included</a>
+      <a class="nav-link" href="#how">How it works</a>
+      <a class="nav-link" href="#faq">FAQ</a>
+      <a class="nav-cta" href="/curator-portal.html">Sign in →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════ HERO ═══════════════════ -->
+<header class="hero" id="top">
+  <div class="hero-inner">
+    <div>
+      <p class="hero-eyebrow">Curator · A NorthNext service</p>
+      <h1 class="hero-title">Your business,<br><em>looked after.</em></h1>
+      <p class="hero-body">
+        SECP registration, FBR setup, and ongoing compliance — handled by a chartered accountant who actually picks up the phone. Free to start.
+      </p>
+      <div class="hero-ctas">
+        <a class="btn-primary" href="https://onewindow.info/#curator-card">Get started — free</a>
+        <a class="btn-secondary" href="/curator-portal.html">Existing clients · Sign in</a>
+      </div>
+    </div>
+
+    <div class="hero-card">
+      <p class="hero-card-eyebrow">Included free</p>
+      <h3 class="hero-card-title">Business setup, end-to-end.</h3>
+      <ul class="hero-card-list">
+        <li><span class="hero-card-check">✓</span><span>SECP company registration — no service fee</span></li>
+        <li><span class="hero-card-check">✓</span><span>FBR compliance: NTN, sales tax, IRIS</span></li>
+        <li><span class="hero-card-check">✓</span><span>One-hour advisory with a CPA</span></li>
+        <li><span class="hero-card-check">✓</span><span>First three months of compliance — covered</span></li>
+      </ul>
+      <p class="hero-card-foot">Available to Pakistani teams only.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════ WHAT'S INCLUDED ═══════════════════ -->
+<section class="section" id="included">
+  <div class="section-inner">
+    <p class="section-eyebrow">Service breakdown</p>
+    <h2 class="section-title">What you get, <em>without the bill.</em></h2>
+    <p class="section-lead">
+      Most accounting firms charge tens of thousands of rupees to get a business off the ground. We don't, because we'd rather earn your trust before we earn your fees.
+    </p>
+
+    <div class="included-grid">
+      <div class="included-card">
+        <div class="included-num">01</div>
+        <h3 class="included-title">Company registration</h3>
+        <p class="included-body">
+          Full SECP incorporation — Private Limited, Single Member Company, or AOP. We handle the e-Services portal, the name reservation, the memorandum, the articles, the signatures. You sign one form.
+        </p>
+      </div>
+      <div class="included-card">
+        <div class="included-num">02</div>
+        <h3 class="included-title">FBR setup</h3>
+        <p class="included-body">
+          NTN registration, sales tax enrolment, and IRIS portal access — all done in your name. We make sure your tax profile is opened correctly so it doesn't haunt you in year three.
+        </p>
+      </div>
+      <div class="included-card">
+        <div class="included-num">03</div>
+        <h3 class="included-title">CPA advisory call</h3>
+        <p class="included-body">
+          A one-hour call with a chartered accountant. We map out your numbers, your obligations, and what to watch for in the first year. No upsell — just plain answers.
+        </p>
+      </div>
+      <div class="included-card">
+        <div class="included-num">04</div>
+        <h3 class="included-title">First-quarter compliance</h3>
+        <p class="included-body">
+          Sales tax returns, withholding statements, and any filings that come due in your first three months. We do them so you can focus on the actual business.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ PULL QUOTE ═══════════════════ -->
+<section class="pullquote">
+  <p class="pullquote-text">
+    Starting a business in Pakistan shouldn't require a degree in tax law. <em>We carry the paperwork so you can carry the business.</em>
+  </p>
+</section>
+
+<!-- ═══════════════════ HOW IT WORKS ═══════════════════ -->
+<section class="section" id="how">
+  <div class="section-inner">
+    <p class="section-eyebrow">How it works</p>
+    <h2 class="section-title">Three steps, <em>no surprises.</em></h2>
+    <p class="section-lead">
+      From the moment you submit your details to the moment your company is live in SECP records — about ten business days.
+    </p>
+
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">i.</div>
+        <h3 class="step-title">Tell us about you</h3>
+        <p class="step-body">A short form — name, email, what business you're starting. A CPA reaches out within one business day for a discovery call.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">ii.</div>
+        <h3 class="step-title">We do the paperwork</h3>
+        <p class="step-body">SECP filings, FBR registration, IRIS access. You sign what needs signing. We handle the rest.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">iii.</div>
+        <h3 class="step-title">Your portal is ready</h3>
+        <p class="step-body">You get a private dashboard for documents, tasks, and direct messages with your advisor. No more lost emails.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ FAQ ═══════════════════ -->
+<section class="section" style="background: var(--cream-2);" id="faq">
+  <div class="section-inner">
+    <p class="section-eyebrow">Questions, answered</p>
+    <h2 class="section-title">Frequently <em>asked.</em></h2>
+
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q">If it's all free, what's the catch?<span class="faq-toggle">+</span></div>
+        <p class="faq-a">There's no catch. We make our money on long-term bookkeeping, tax filing, and advisory work — for clients who stay with us after the first three months. Setup is free because we'd rather prove ourselves than charge you upfront. If you're happy after the free period, you stay. If not, you don't owe us anything.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">How long does SECP registration take?<span class="faq-toggle">+</span></div>
+        <p class="faq-a">Typically 7–10 business days from the moment we have all your documents. Name reservation takes 1–2 days, and the incorporation itself takes another 5–8 days once SECP processes the e-Services submission. We keep you updated through every step in your portal.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What documents do I need to provide?<span class="faq-toggle">+</span></div>
+        <p class="faq-a">CNIC copies for all directors, address proof, and a few signed forms we'll prepare for you. We'll send you a clear checklist after your first call so nothing's a surprise.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Who is "we"? Who's actually doing the work?<span class="faq-toggle">+</span></div>
+        <p class="faq-a">Curator is a service from NorthNext Ventures, run by a team of Chartered Accountants based in Pakistan. We use the same software we build for our larger clients — including NIMBY, our accounting platform.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What happens after the free three months?<span class="faq-toggle">+</span></div>
+        <p class="faq-a">If you'd like us to keep handling your bookkeeping, tax filings, and compliance, we'll propose a monthly fee scaled to your business size. Most clients pay between Rs. 15,000–60,000 per month. You're never locked in — month-to-month, no contracts.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">I already have a business. Can you take it over?<span class="faq-toggle">+</span></div>
+        <p class="faq-a">Yes. We do takeovers from other accountants regularly. The first call covers what's already in place, what's missing, and what needs cleaning up. We'll be honest about scope.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Is it really only for Pakistani businesses?<span class="faq-toggle">+</span></div>
+        <p class="faq-a">For now, yes. SECP and FBR are Pakistan-specific, and we want to do them properly rather than half-heartedly. If you're abroad with Pakistani operations, get in touch — we'll let you know if we can help.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ FINAL CTA ═══════════════════ -->
+<section class="section final-cta">
+  <div class="section-inner">
+    <p class="section-eyebrow">Ready when you are</p>
+    <h2 class="section-title">Start, <em>quietly.</em></h2>
+    <p class="section-lead">
+      No pushy emails, no sales script, no commitment. Just a short form and a real person on the other end.
+    </p>
+    <div style="text-align: center;">
+      <a class="btn-primary" href="https://onewindow.info/#curator-card" style="background: var(--navy); color: var(--cream);">Get started — free</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<footer class="footer">
+  <div class="footer-brand">CURATOR</div>
+  <div>A service from <a href="https://onewindow.info">NorthNext Ventures</a></div>
+  <div class="footer-line"></div>
+  <div class="footer-note">© NorthNext Ventures. Curator is available to Pakistani businesses only.</div>
+</footer>
+
+<script>
+  // FAQ toggle
+  document.querySelectorAll('.faq-item').forEach(item => {
+    item.addEventListener('click', () => item.classList.toggle('open'));
+  });
+</script>
+
+</body>
+</html>
