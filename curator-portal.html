@@ -793,6 +793,48 @@
   }
   #clientDrawerOverlay { backdrop-filter: none; }
 
+  /* Style A — clean minimal summary card */
+  .cprofile-card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 22px 26px;
+    margin-bottom: 8px;
+  }
+  .cprofile-head {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 18px;
+  }
+  .cprofile-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--cream-2);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 18px; color: var(--navy);
+    flex-shrink: 0;
+  }
+  .cprofile-name {
+    font-family: var(--font-serif);
+    font-size: 23px; font-weight: 500; color: var(--navy);
+    line-height: 1.2;
+  }
+  .cprofile-sub { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+  .cprofile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px 24px;
+    border-top: 1px solid var(--line-soft);
+    padding-top: 16px;
+  }
+  .cprofile-field-label {
+    font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--ink-soft); font-weight: 700;
+  }
+  .cprofile-field-value {
+    font-size: 14px; color: var(--ink); margin-top: 4px; word-break: break-word;
+  }
+  .cprofile-field-value a { color: var(--navy); text-decoration: underline; }
+
+
   .drawer-head {
     padding: 22px 28px;
     border-bottom: 1px solid var(--line);
@@ -1783,6 +1825,12 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
+  function initialsOf(name) {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
   function fmtDate(s) {
     if (!s) return '—';
     try {
@@ -2583,47 +2631,36 @@
     const status = client.status || 'prospect';
     const bookkeeping = !!client.has_bookkeeping_access;
     $('clientDrawerBody').innerHTML = `
-      <div class="detail-row">
-        <div class="detail-label">Status</div>
-        <div class="detail-value"><span class="pill client-${status}">${escapeHtml(status)}</span></div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Name</div>
-        <div class="detail-value">${escapeHtml(client.full_name || '—')}</div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Email</div>
-        <div class="detail-value">
-          <a href="mailto:${escapeHtml(client.email)}" style="color:var(--navy); text-decoration:underline;">
-            ${escapeHtml(client.email || '—')}
-          </a>
+      <div class="cprofile-card">
+        <div class="cprofile-head">
+          <div class="cprofile-avatar">${escapeHtml(initialsOf(client.full_name || client.email || '?'))}</div>
+          <div style="flex:1;">
+            <div class="cprofile-name">${escapeHtml(client.full_name || '—')}</div>
+            <div class="cprofile-sub">${escapeHtml(client.business_name || '—')}${client.business_type ? ' · ' + escapeHtml(client.business_type) : ''}</div>
+          </div>
+          <span class="pill client-${status}">${escapeHtml(status)}</span>
         </div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Phone</div>
-        <div class="detail-value">${client.phone ? `<a href="tel:${escapeHtml(client.phone)}" style="color:var(--navy); text-decoration:underline;">${escapeHtml(client.phone)}</a>` : '<span class="muted">Not provided</span>'}</div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Business</div>
-        <div class="detail-value">${escapeHtml(client.business_name || '—')}</div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Business type</div>
-        <div class="detail-value">${escapeHtml(client.business_type || '—')}</div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Joined</div>
-        <div class="detail-value">${fmtDateTime(client.created_at)}</div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Bookkeeping</div>
-        <div class="detail-value">
-          <label style="display:inline-flex; gap:8px; align-items:center; cursor:pointer;">
-            <input type="checkbox" id="bookkeepingToggle" ${bookkeeping ? 'checked' : ''} onchange="toggleBookkeepingAccess('${client.id}', this.checked)">
-            <span>${bookkeeping ? 'Enabled' : 'Not enabled'}</span>
-          </label>
-          <div style="font-size:11px; color: var(--ink-faint); margin-top:4px;">
-            Toggle this on once they sign up for bookkeeping. The Bookkeeping documents box appears in their portal.
+        <div class="cprofile-grid">
+          <div>
+            <div class="cprofile-field-label">Email</div>
+            <div class="cprofile-field-value">${client.email ? `<a href="mailto:${escapeHtml(client.email)}">${escapeHtml(client.email)}</a>` : '—'}</div>
+          </div>
+          <div>
+            <div class="cprofile-field-label">Phone</div>
+            <div class="cprofile-field-value">${client.phone ? `<a href="tel:${escapeHtml(client.phone)}">${escapeHtml(client.phone)}</a>` : '—'}</div>
+          </div>
+          <div>
+            <div class="cprofile-field-label">Joined</div>
+            <div class="cprofile-field-value">${fmtDateTime(client.created_at)}</div>
+          </div>
+          <div>
+            <div class="cprofile-field-label">Bookkeeping</div>
+            <div class="cprofile-field-value">
+              <label style="display:inline-flex; gap:8px; align-items:center; cursor:pointer;">
+                <input type="checkbox" id="bookkeepingToggle" ${bookkeeping ? 'checked' : ''} onchange="toggleBookkeepingAccess('${client.id}', this.checked)">
+                <span>${bookkeeping ? 'Enabled' : 'Not enabled'}</span>
+              </label>
+            </div>
           </div>
         </div>
       </div>
