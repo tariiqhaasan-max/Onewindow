@@ -876,6 +876,53 @@
     border-top: 1px solid var(--line);
   }
 
+  /* Task category filter pills */
+  .ctask-filter-bar {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .ctask-filter {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-size: 13px; padding: 6px 14px;
+    border-radius: 16px; cursor: pointer;
+  }
+  .ctask-filter:hover { border-color: var(--navy); color: var(--navy); }
+  .ctask-filter.active { background: var(--navy); color: var(--paper); border-color: var(--navy); }
+
+  /* Bolder, more prominent task titles */
+  .ctask-title { font-size: 15px !important; font-weight: 600 !important; }
+  .ctask-row.done .ctask-title { font-weight: 500 !important; }
+
+  /* Collapsible messages panel near the header */
+  .cdrawer-msg-panel {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .cdrawer-msg-bar {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--cream-2);
+    border: none; cursor: pointer;
+    padding: 13px 18px;
+    font-family: var(--font-serif);
+    font-size: 16px; color: var(--navy);
+  }
+  .cdrawer-msg-bar-label { flex: 1; text-align: left; }
+  .cdrawer-msg-bar-badge {
+    background: var(--rose); color: #fff;
+    font-family: var(--font-sans, sans-serif);
+    font-size: 12px; font-weight: 700;
+    min-width: 20px; height: 20px; padding: 0 6px;
+    border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .cdrawer-msg-bar-chev { font-size: 13px; color: var(--ink-soft); }
+  .cdrawer-msg-body { padding: 16px 18px; }
+
 
   .drawer-head {
     padding: 22px 28px;
@@ -2707,6 +2754,24 @@
         </div>
       </div>
 
+      <!-- Messages — collapsible, sits near the top; auto-opens on new message -->
+      <div id="cdrawer-messages" class="cdrawer-msg-panel">
+        <button class="cdrawer-msg-bar" id="cdrawerMsgBar" onclick="cdrawerToggleMessages()" type="button">
+          <span class="cdrawer-msg-bar-label">Messages</span>
+          <span class="cdrawer-msg-bar-badge" id="cdrawerMsgBadge" style="display:none;"></span>
+          <span class="cdrawer-msg-bar-chev" id="cdrawerMsgChev">▸</span>
+        </button>
+        <div class="cdrawer-msg-body" id="cdrawerMsgBody" style="display:none;">
+          <div class="messages-wrap" style="height: 320px; min-height: 220px;">
+            <div class="messages-list" id="cdrawerMessagesList"></div>
+            <div class="msg-composer">
+              <textarea id="cdrawerMsgInput" placeholder="Reply to client…" rows="1"></textarea>
+              <button class="msg-send-btn" onclick="cdrawerSendMessage()">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="drawer-section">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
           <h4 class="drawer-section-title" style="margin:0;">Client workspace</h4>
@@ -2752,24 +2817,19 @@
             </div>
           </div>
 
+          <div class="ctask-filter-bar" id="cdrawerTaskFilter">
+            <button class="ctask-filter active" data-task-filter="all" onclick="cdrawerSetTaskFilter('all')">All</button>
+            <button class="ctask-filter" data-task-filter="urgent" onclick="cdrawerSetTaskFilter('urgent')">Most urgent</button>
+            <button class="ctask-filter" data-task-filter="secp" onclick="cdrawerSetTaskFilter('secp')">SECP</button>
+            <button class="ctask-filter" data-task-filter="fbr" onclick="cdrawerSetTaskFilter('fbr')">FBR</button>
+            <button class="ctask-filter" data-task-filter="other" onclick="cdrawerSetTaskFilter('other')">Other</button>
+          </div>
           <div id="cdrawerTasksList"></div>
         </div>
 
         <!-- Docs pane (advisor view) -->
         <div id="cdrawer-docs" style="display:none;">
           <div id="cdrawerDocsList"></div>
-        </div>
-
-        <!-- Messages — always visible, full width at bottom -->
-        <div id="cdrawer-messages" class="cdrawer-msg-block">
-          <h4 class="drawer-section-title" style="margin:0 0 12px;">Messages</h4>
-          <div class="messages-wrap" style="height: 340px; min-height: 240px;">
-            <div class="messages-list" id="cdrawerMessagesList"></div>
-            <div class="msg-composer">
-              <textarea id="cdrawerMsgInput" placeholder="Reply to client…" rows="1"></textarea>
-              <button class="msg-send-btn" onclick="cdrawerSendMessage()">Send</button>
-            </div>
-          </div>
         </div>
       </div>
     `;
@@ -3370,6 +3430,44 @@
     if (btn) btn.textContent = showing ? '+ Add task' : '× Close';
   };
 
+  window._cdrawerTaskFilter = 'all';
+  window.cdrawerSetTaskFilter = function (f) {
+    window._cdrawerTaskFilter = f;
+    document.querySelectorAll('[data-task-filter]').forEach(b =>
+      b.classList.toggle('active', b.dataset.taskFilter === f));
+    renderCdrawerTasks();
+  };
+
+  window.cdrawerToggleMessages = function () {
+    const body = $('cdrawerMsgBody');
+    const chev = $('cdrawerMsgChev');
+    if (!body) return;
+    const showing = body.style.display !== 'none';
+    body.style.display = showing ? 'none' : '';
+    if (chev) chev.textContent = showing ? '▸' : '▾';
+    if (!showing) {
+      // Opened — clear the unread badge and stamp seen
+      const badge = $('cdrawerMsgBadge');
+      if (badge) badge.style.display = 'none';
+      if (cdrawerCurrentClient) markTabSeen(cdrawerCurrentClient.id, 'messages');
+    }
+  };
+
+  // Show/refresh the unread badge on the messages bar; auto-open if unread.
+  window.cdrawerSetMsgUnread = function (count) {
+    const badge = $('cdrawerMsgBadge');
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = count;
+      badge.style.display = '';
+      // Auto-open the panel when there's a new message
+      const body = $('cdrawerMsgBody');
+      if (body && body.style.display === 'none') cdrawerToggleMessages();
+    } else {
+      badge.style.display = 'none';
+    }
+  };
+
   // Override openClientDrawer to also load workspace data
   const _origOpenClientDrawer = window.openClientDrawer;
   window.openClientDrawer = function (clientId) {
@@ -3388,9 +3486,19 @@
     if (addBox) addBox.style.display = 'none';
     const addToggle = $('cdrawerAddToggle');
     if (addToggle) addToggle.textContent = '+ Add task';
+    // Reset task filter to All
+    window._cdrawerTaskFilter = 'all';
+    document.querySelectorAll('[data-task-filter]').forEach(b =>
+      b.classList.toggle('active', b.dataset.taskFilter === 'all'));
     loadCdrawerTasks();
-    // Messages are always visible at the bottom now — load them on open
+    // Messages: collapsed by default, load content, then set unread (auto-opens if any)
+    const msgBody = $('cdrawerMsgBody');
+    if (msgBody) msgBody.style.display = 'none';
+    const msgChev = $('cdrawerMsgChev');
+    if (msgChev) msgChev.textContent = '▸';
     loadCdrawerMessages();
+    const unread = (activityMap[clientId] && activityMap[clientId].messages) || 0;
+    if (typeof window.cdrawerSetMsgUnread === 'function') window.cdrawerSetMsgUnread(unread);
     // Populate compliance catalog dropdown (lazy: only when drawer opens)
     if (typeof window.cdrawerPopulateComplianceCatalog === 'function') {
       window.cdrawerPopulateComplianceCatalog();
@@ -3410,14 +3518,24 @@
   }
   function renderCdrawerTasks() {
     const list = $('cdrawerTasksList');
-    if (cdrawerTasksCache.length === 0) {
-      list.innerHTML = `<div class="placeholder" style="padding:18px;"><h4 class="placeholder-title">No tasks yet.</h4>Use “+ Add task” above.</div>`;
+
+    // Apply category/urgency filter
+    const filter = window._cdrawerTaskFilter || 'all';
+    let visible = cdrawerTasksCache.slice();
+    if (filter === 'secp')      visible = visible.filter(t => categoryClass(t.category) === 'secp');
+    else if (filter === 'fbr')  visible = visible.filter(t => categoryClass(t.category) === 'fbr');
+    else if (filter === 'other') visible = visible.filter(t => !['secp','fbr'].includes(categoryClass(t.category)));
+    else if (filter === 'urgent') visible = visible.filter(t => t.status !== 'completed' && t.due_date && dueBucket(t.due_date) !== 'upcoming');
+
+    if (visible.length === 0) {
+      const msg = cdrawerTasksCache.length === 0 ? 'No tasks yet. Use “+ Add task” above.' : 'No tasks in this filter.';
+      list.innerHTML = `<div class="placeholder" style="padding:18px;"><h4 class="placeholder-title">${msg}</h4></div>`;
       return;
     }
 
     // Bucket each task: overdue, upcoming, completed
     const buckets = { overdue: [], upcoming: [], completed: [] };
-    cdrawerTasksCache.forEach(task => {
+    visible.forEach(task => {
       if (task.status === 'completed') { buckets.completed.push(task); return; }
       if (task.due_date && dueBucket(task.due_date) === 'overdue') { buckets.overdue.push(task); return; }
       buckets.upcoming.push(task);
@@ -3626,6 +3744,12 @@
           if (!cdrawerMessagesCache.find(m => m.id === payload.new.id)) {
             cdrawerMessagesCache.push(payload.new);
             renderCdrawerMessages();
+            // Incoming message from the client → flag unread (auto-opens panel)
+            if (payload.new.sender_role !== 'advisor' && typeof window.cdrawerSetMsgUnread === 'function') {
+              const body = $('cdrawerMsgBody');
+              const open = body && body.style.display !== 'none';
+              if (!open) window.cdrawerSetMsgUnread(1);
+            }
           }
         })
       .subscribe();
