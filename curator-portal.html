@@ -2612,22 +2612,16 @@
       notes_internal: $('drawerNotes').value.trim() || null,
     };
 
-    const { data: token } = await sb.auth.getSession();
-    const accessToken = token && token.session && token.session.access_token;
-
     try {
-      const res = await fetch(CURATOR_ADMIN_URL + '/update-lead', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + accessToken
-        },
-        body: JSON.stringify({ lead_id: currentLeadId, ...updates })
-      });
-      const data = await res.json();
+      const { data, error } = await sb
+        .from('onewindow_curator_leads')
+        .update(updates)
+        .eq('id', currentLeadId)
+        .select()
+        .single();
       btn.disabled = false; btn.textContent = 'Save changes';
-      if (!res.ok || !data.ok) {
-        msg.textContent = data.error || 'Save failed.';
+      if (error) {
+        msg.textContent = error.message || 'Save failed.';
         msg.className = 'form-msg error';
         return;
       }
@@ -2635,7 +2629,7 @@
       msg.className = 'form-msg success';
       // Update cache and re-render list
       const idx = leadsCache.findIndex(l => l.id === currentLeadId);
-      if (idx >= 0) leadsCache[idx] = data.lead;
+      if (idx >= 0) leadsCache[idx] = data;
       renderLeads();
       setTimeout(() => { msg.textContent = ''; msg.className = 'form-msg'; }, 3000);
     } catch (err) {
@@ -2647,18 +2641,16 @@
 
   window.markLastContacted = async function () {
     if (!currentLeadId) return;
-    const { data: token } = await sb.auth.getSession();
-    const accessToken = token && token.session && token.session.access_token;
-    const res = await fetch(CURATOR_ADMIN_URL + '/update-lead', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
-      body: JSON.stringify({ lead_id: currentLeadId, last_contacted_at: new Date().toISOString() })
-    });
-    const data = await res.json();
-    if (data.ok) {
+    const { data, error } = await sb
+      .from('onewindow_curator_leads')
+      .update({ last_contacted_at: new Date().toISOString() })
+      .eq('id', currentLeadId)
+      .select()
+      .single();
+    if (!error && data) {
       const idx = leadsCache.findIndex(l => l.id === currentLeadId);
-      if (idx >= 0) leadsCache[idx] = data.lead;
-      renderLeadDrawer(data.lead);
+      if (idx >= 0) leadsCache[idx] = data;
+      renderLeadDrawer(data);
       renderLeads();
     }
   };
