@@ -869,6 +869,89 @@
   }
   .ctask-del:hover { color: var(--rose); border-color: var(--rose); }
 
+  /* Inline completion panel (who did it + fee) */
+  .ctask-complete-panel {
+    background: var(--cream-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: -2px 0 10px;
+  }
+  .ccp-q { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+  .ccp-choices { display: flex; gap: 8px; margin-bottom: 10px; }
+  .ccp-choice {
+    flex: 1; background: var(--paper); border: 1px solid var(--line);
+    color: var(--ink); font-size: 13px; padding: 8px 12px;
+    border-radius: 6px; cursor: pointer;
+  }
+  .ccp-choice:hover { border-color: var(--navy); }
+  .ccp-choice.active { background: var(--navy); color: var(--paper); border-color: var(--navy); }
+  .ccp-fee-wrap { margin-bottom: 10px; }
+  .ccp-fee-label { display: block; font-size: 11px; letter-spacing: .5px; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 4px; }
+  .ccp-fee-input { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; }
+  .ccp-actions { display: flex; gap: 8px; }
+  .ccp-confirm {
+    background: var(--navy); color: var(--paper); border: none;
+    font-size: 13px; padding: 8px 16px; border-radius: 6px; cursor: pointer;
+  }
+  .ccp-cancel {
+    background: transparent; border: 1px solid var(--line); color: var(--ink-soft);
+    font-size: 13px; padding: 8px 16px; border-radius: 6px; cursor: pointer;
+  }
+
+  /* Document actions + grouped display */
+  .cdoc-actions { display: flex; gap: 8px; margin-bottom: 14px; }
+  .btn-secondary {
+    background: transparent; border: 1px solid var(--line); color: var(--navy);
+    font-size: 14px; padding: 8px 16px; border-radius: 8px; cursor: pointer;
+  }
+  .btn-secondary:hover { border-color: var(--navy); }
+  .cdoc-action-box {
+    background: var(--cream-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px; margin-bottom: 16px;
+  }
+  .cdoc-action-title { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 10px; }
+  .cdoc-action-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .cdoc-action-row .field-input { flex: 1; min-width: 120px; }
+  .cdoc-action-buttons { display: flex; gap: 8px; margin-top: 4px; }
+
+  .doc-cat-head {
+    font-family: var(--font-serif); font-size: 16px; font-weight: 600;
+    color: var(--navy); margin: 20px 0 4px;
+    border-bottom: 1px solid var(--line); padding-bottom: 6px;
+  }
+  .doc-cat-count { color: var(--ink-faint); font-weight: normal; font-size: 12px; }
+  .doc-year-head {
+    font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--ink-soft); font-weight: 700; margin: 12px 0 6px;
+  }
+  .doc-item.doc-request { background: #faf6ec; border: 1px dashed var(--line); }
+  .doc-item.doc-receipt { border-left: 3px solid #0f6e56; }
+  .doc-pending-badge {
+    font-size: 11px; color: #7a5a1f; background: #faeeda;
+    padding: 3px 10px; border-radius: 10px; white-space: nowrap;
+  }
+  .doc-action.danger { color: var(--rose); }
+
+  /* Client-side: curator document requests banner */
+  .docreq-box {
+    background: #faf6ec; border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px 18px; margin-bottom: 18px;
+  }
+  .docreq-title { font-size: 14px; font-weight: 600; color: var(--navy); margin-bottom: 10px; }
+  .docreq-item {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;
+  }
+  .docreq-label { font-size: 14px; color: var(--ink); font-weight: 500; }
+  .docreq-meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .docreq-upload-btn {
+    background: var(--navy); color: var(--paper); font-size: 13px;
+    padding: 8px 18px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+  }
+  .docreq-upload-btn:hover { opacity: 0.9; }
+
   /* Messages block — always visible at bottom */
   .cdrawer-msg-block {
     margin-top: 28px;
@@ -2829,6 +2912,11 @@
 
         <!-- Docs pane (advisor view) -->
         <div id="cdrawer-docs" style="display:none;">
+          <div class="cdoc-actions">
+            <button class="btn-primary" onclick="cdrawerOpenDocAction('request')" type="button">Request a document</button>
+            <button class="btn-secondary" onclick="cdrawerOpenDocAction('upload')" type="button">Upload a file</button>
+          </div>
+          <div id="cdrawerDocActionBox" class="cdoc-action-box" style="display:none;"></div>
           <div id="cdrawerDocsList"></div>
         </div>
       </div>
@@ -3080,8 +3168,11 @@
     if (!grid) return;
     const hasBookkeepingAccess = !!(currentClient && currentClient.has_bookkeeping_access);
 
+    // Pending requests banner (documents the curator asked for)
+    renderClientDocRequests();
+
     grid.innerHTML = DOC_CATEGORIES.map(cat => {
-      const count = clientDocsCache.filter(d => (d.category || 'other') === cat.id).length;
+      const count = clientDocsCache.filter(d => (d.category || 'other') === cat.id && d.status !== 'requested').length;
       const isLocked = cat.restricted && !hasBookkeepingAccess;
       const lockedHtml = isLocked
         ? `<div class="doc-cat-locked-badge">🔒 Available on Bookkeeping plan</div>`
@@ -3105,6 +3196,65 @@
 
   window.alertBookkeepingLocked = function () {
     alert('Bookkeeping is available once you sign up for our bookkeeping service. Your advisor can enable this for you — message them in the Messages tab.');
+  };
+
+  // Show documents the curator has requested; let the client upload against each.
+  function renderClientDocRequests() {
+    const grid = $('docCatGrid');
+    if (!grid) return;
+    let banner = $('clientDocRequests');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'clientDocRequests';
+      grid.parentNode.insertBefore(banner, grid);
+    }
+    const requests = clientDocsCache.filter(d => d.status === 'requested');
+    if (requests.length === 0) { banner.innerHTML = ''; return; }
+    banner.innerHTML = `
+      <div class="docreq-box">
+        <div class="docreq-title">📋 Your curator has requested ${requests.length} document${requests.length > 1 ? 's' : ''}</div>
+        ${requests.map(r => `
+          <div class="docreq-item">
+            <div style="flex:1;">
+              <div class="docreq-label">${escapeHtml(r.requested_label || r.filename)}</div>
+              <div class="docreq-meta">Requested ${timeAgo(r.created_at)}</div>
+            </div>
+            <label class="docreq-upload-btn">
+              Upload
+              <input type="file" style="display:none;" onchange="clientFulfillRequest('${r.id}', this)">
+            </label>
+          </div>
+        `).join('')}
+      </div>`;
+  }
+
+  window.clientFulfillRequest = async function (requestId, input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const req = clientDocsCache.find(d => d.id === requestId);
+    if (!req) { alert('Request not found.'); return; }
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const yPart = req.year_label ? (req.year_label + '/') : '';
+    const path = `${currentClient.id}/${req.category}/${yPart}${Date.now()}_${safeName}`;
+    const { error: stErr } = await sb.storage.from('curator-files').upload(path, file, { upsert: false, contentType: file.type });
+    if (stErr) { alert('Upload failed: ' + stErr.message); return; }
+    // Fulfill the request row in place
+    const { data, error } = await sb.from('curator_files').update({
+      filename: file.name,
+      storage_path: path,
+      file_size: file.size,
+      mime_type: file.type || null,
+      uploaded_by: currentUser.id,
+      uploader_role: 'client',
+      status: 'fulfilled',
+      kind: 'client_doc'
+    }).eq('id', requestId).select().single();
+    if (error) { alert('Could not save: ' + error.message); return; }
+    const idx = clientDocsCache.findIndex(d => d.id === requestId);
+    if (idx >= 0) clientDocsCache[idx] = data;
+    renderDocCategoryGrid();
+    if (currentDocCategory) renderClientDocs();
+    updateClientStats();
   };
 
   window.openDocCategory = function (catId) {
@@ -3163,8 +3313,9 @@
     const container = $('clientDocsContainer');
     if (!container) return;
 
-    // Filter by category + subcategory
-    let filtered = clientDocsCache.filter(d => (d.category || 'other') === currentDocCategory);
+    // Filter by category + subcategory; exclude pending requests (shown separately)
+    let filtered = clientDocsCache.filter(d =>
+      (d.category || 'other') === currentDocCategory && d.status !== 'requested');
     if (currentDocSubcategory) {
       filtered = filtered.filter(d => d.subcategory === currentDocSubcategory);
     }
@@ -3179,16 +3330,18 @@
     }
     let html = '<div class="doc-list" style="margin-top: 14px;">';
     filtered.forEach(doc => {
+      const sp = (doc.storage_path || '').replace(/'/g, "\\'");
+      const isCurator = doc.uploader_role === 'advisor';
       html += `
-        <div class="doc-item">
+        <div class="doc-item${doc.kind === 'receipt' ? ' doc-receipt' : ''}">
           <div>
-            <div class="doc-item-name">${escapeHtml(doc.filename)}</div>
-            <div class="doc-item-meta">Uploaded ${timeAgo(doc.created_at)}</div>
+            <div class="doc-item-name">${doc.kind === 'receipt' ? '🧾 ' : ''}${escapeHtml(doc.filename)}</div>
+            <div class="doc-item-meta">${isCurator ? 'From your curator · ' : ''}Uploaded ${timeAgo(doc.created_at)}</div>
           </div>
           <div class="doc-item-size">${fmtFileSize(doc.file_size)}</div>
           <div class="doc-item-actions">
-            <button class="doc-action" onclick="downloadDoc('${doc.id}', '${doc.storage_path.replace(/'/g, "\\'")}', '${doc.filename.replace(/'/g, "\\'")}')">Download</button>
-            <button class="doc-action danger" onclick="deleteDoc('${doc.id}', '${doc.storage_path.replace(/'/g, "\\'")}')">Delete</button>
+            <button class="doc-action" onclick="downloadDoc('${doc.id}', '${sp}', '${doc.filename.replace(/'/g, "\\'")}')">Download</button>
+            ${isCurator ? '' : `<button class="doc-action danger" onclick="deleteDoc('${doc.id}', '${sp}')">Delete</button>`}
           </div>
         </div>`;
     });
@@ -3564,7 +3717,11 @@
 
       let dueBadge = '';
       if (isDone) {
-        dueBadge = `<span class="ctask-due done">Done${task.completed_at ? ' ' + fmtDate(task.completed_at) : ''}</span>`;
+        const byLabel = task.done_by === 'curator' ? 'Curator' : (task.done_by === 'client' ? 'Client' : '');
+        const feeLabel = (task.done_by === 'curator' && task.fee_amount != null)
+          ? ` · PKR ${Number(task.fee_amount).toLocaleString('en-PK')}` : '';
+        const doneText = `Done${task.completed_at ? ' ' + fmtDate(task.completed_at) : ''}`;
+        dueBadge = `<span class="ctask-due done">${doneText}${byLabel ? ' · ' + byLabel : ''}${feeLabel}</span>`;
       } else if (task.due_date) {
         const b = dueBucket(task.due_date);
         const cls = b === 'overdue' ? 'overdue' : (b === 'due-soon' ? 'due-soon' : '');
@@ -3573,7 +3730,7 @@
       }
 
       return `
-        <div class="ctask-row ${isDone ? 'done' : ''}">
+        <div class="ctask-row ${isDone ? 'done' : ''}" data-task-id="${task.id}">
           <div class="task-checkbox ${isDone ? 'checked' : ''}" onclick="cdrawerToggleTask('${task.id}')"></div>
           <div class="ctask-main">
             <span class="ctask-title">${catBadge}${escapeHtml(task.title)}${recHint}${flag}</span>
@@ -3618,14 +3775,81 @@
   window.cdrawerToggleTask = async function (taskId) {
     const task = cdrawerTasksCache.find(t => t.id === taskId);
     if (!task) return;
-    const newStatus = task.status === 'completed' ? 'open' : 'completed';
+    if (task.status === 'completed') {
+      // Un-complete: clear status, completion fields
+      const { data, error } = await sb.from('curator_tasks').update({
+        status: 'open',
+        completed_at: null,
+        done_by: null,
+        fee_amount: null
+      }).eq('id', taskId).select().single();
+      if (error) { alert('Update failed: ' + error.message); return; }
+      const idx = cdrawerTasksCache.findIndex(t => t.id === taskId);
+      if (idx >= 0) cdrawerTasksCache[idx] = data;
+      renderCdrawerTasks();
+    } else {
+      // Completing → ask who did it (+ fee if curator)
+      cdrawerOpenCompletePanel(taskId);
+    }
+  };
+
+  // Show an inline completion panel under the task row
+  window.cdrawerOpenCompletePanel = function (taskId) {
+    // Close any other open panel first
+    document.querySelectorAll('.ctask-complete-panel').forEach(p => p.remove());
+    const row = document.querySelector(`.ctask-row[data-task-id="${taskId}"]`);
+    if (!row) return;
+    const panel = document.createElement('div');
+    panel.className = 'ctask-complete-panel';
+    panel.innerHTML = `
+      <div class="ccp-q">Who completed this?</div>
+      <div class="ccp-choices">
+        <button class="ccp-choice" data-by="curator" onclick="cdrawerPickDoneBy('${taskId}','curator', this)">Curator did it</button>
+        <button class="ccp-choice" data-by="client"  onclick="cdrawerPickDoneBy('${taskId}','client', this)">Client did it</button>
+      </div>
+      <div class="ccp-fee-wrap" id="ccpFee-${taskId}" style="display:none;">
+        <label class="ccp-fee-label">Fee charged (PKR)</label>
+        <input type="number" class="ccp-fee-input" id="ccpFeeInput-${taskId}" placeholder="e.g. 5000" min="0" step="0.01">
+      </div>
+      <div class="ccp-actions">
+        <button class="ccp-confirm" onclick="cdrawerConfirmComplete('${taskId}')">Mark done</button>
+        <button class="ccp-cancel" onclick="this.closest('.ctask-complete-panel').remove()">Cancel</button>
+      </div>
+    `;
+    row.insertAdjacentElement('afterend', panel);
+  };
+
+  window._cdrawerPendingDoneBy = {};
+  window.cdrawerPickDoneBy = function (taskId, by, btn) {
+    window._cdrawerPendingDoneBy[taskId] = by;
+    const panel = btn.closest('.ctask-complete-panel');
+    panel.querySelectorAll('.ccp-choice').forEach(b => b.classList.toggle('active', b === btn));
+    const feeWrap = $('ccpFee-' + taskId);
+    if (feeWrap) feeWrap.style.display = (by === 'curator') ? '' : 'none';
+  };
+
+  window.cdrawerConfirmComplete = async function (taskId) {
+    const by = window._cdrawerPendingDoneBy[taskId];
+    if (!by) { alert('Please choose who completed it.'); return; }
+    let fee = null;
+    if (by === 'curator') {
+      const input = $('ccpFeeInput-' + taskId);
+      const raw = input && input.value.trim();
+      if (raw) {
+        fee = parseFloat(raw);
+        if (isNaN(fee) || fee < 0) { alert('Enter a valid fee amount, or leave it blank.'); return; }
+      }
+    }
     const { data, error } = await sb.from('curator_tasks').update({
-      status: newStatus,
-      completed_at: newStatus === 'completed' ? new Date().toISOString() : null
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      done_by: by,
+      fee_amount: fee
     }).eq('id', taskId).select().single();
     if (error) { alert('Update failed: ' + error.message); return; }
     const idx = cdrawerTasksCache.findIndex(t => t.id === taskId);
     if (idx >= 0) cdrawerTasksCache[idx] = data;
+    delete window._cdrawerPendingDoneBy[taskId];
     renderCdrawerTasks();
   };
   window.cdrawerDeleteTask = async function (taskId) {
@@ -3646,42 +3870,199 @@
     if (error) { list.innerHTML = `<div class="placeholder">${escapeHtml(error.message)}</div>`; return; }
     cdrawerDocsCache = data || [];
     if (cdrawerDocsCache.length === 0) {
-      list.innerHTML = `<div class="placeholder" style="padding:18px;"><h4 class="placeholder-title">No documents yet.</h4>The client hasn't uploaded any files.</div>`;
+      list.innerHTML = `<div class="placeholder" style="padding:18px;"><h4 class="placeholder-title">No documents yet.</h4>Request one or upload a file above.</div>`;
       return;
     }
-    // Group by category
-    const byCategory = {};
+
+    const catTitles = { secp: 'SECP', fbr: 'FBR', other_legal: 'Other Legal', bookkeeping: 'Bookkeeping', other: 'Other' };
+    const catOrder = ['secp','fbr','other_legal','bookkeeping','other'];
+
+    // Group: category → year → docs
+    const tree = {};
     cdrawerDocsCache.forEach(doc => {
       const cat = doc.category || 'other';
-      if (!byCategory[cat]) byCategory[cat] = [];
-      byCategory[cat].push(doc);
+      const yr = doc.year_label || 'No year';
+      tree[cat] = tree[cat] || {};
+      tree[cat][yr] = tree[cat][yr] || [];
+      tree[cat][yr].push(doc);
     });
-    const catTitles = { secp: 'SECP', fbr: 'FBR', other_legal: 'Other Legal', bookkeeping: 'Bookkeeping', other: 'Uncategorized' };
-    let html = '';
-    Object.keys(byCategory).forEach(cat => {
-      html += `<div style="font-family: var(--font-serif); font-size: 14px; color: var(--navy); margin: 16px 0 8px; font-weight: 600;">${catTitles[cat] || cat} <span style="color: var(--ink-faint); font-weight: normal; font-size: 12px;">(${byCategory[cat].length})</span></div>`;
-      html += '<div class="doc-list">';
-      byCategory[cat].forEach(doc => {
-        html += `
-          <div class="doc-item">
-            <div>
-              <div class="doc-item-name">${escapeHtml(doc.filename)}</div>
-              <div class="doc-item-meta">${doc.subcategory ? escapeHtml(doc.subcategory) + ' · ' : ''}Uploaded ${timeAgo(doc.created_at)}</div>
+
+    const docRow = (doc) => {
+      const isRequest = doc.status === 'requested';
+      const isReceipt = doc.kind === 'receipt';
+      const who = doc.uploader_role === 'advisor' ? 'Curator' : 'Client';
+      if (isRequest) {
+        return `
+          <div class="doc-item doc-request">
+            <div style="flex:1;">
+              <div class="doc-item-name">📋 ${escapeHtml(doc.requested_label || doc.filename)}</div>
+              <div class="doc-item-meta">Requested ${timeAgo(doc.created_at)} · awaiting client upload</div>
             </div>
-            <div class="doc-item-size">${fmtFileSize(doc.file_size)}</div>
+            <span class="doc-pending-badge">Pending</span>
             <div class="doc-item-actions">
-              <button class="doc-action" onclick="cdrawerDownloadDoc('${doc.storage_path.replace(/'/g, "\\'")}')">Download</button>
+              <button class="doc-action danger" onclick="cdrawerCancelRequest('${doc.id}')">Cancel</button>
             </div>
           </div>`;
+      }
+      return `
+        <div class="doc-item${isReceipt ? ' doc-receipt' : ''}">
+          <div style="flex:1;">
+            <div class="doc-item-name">${isReceipt ? '🧾 ' : ''}${escapeHtml(doc.filename)}</div>
+            <div class="doc-item-meta">${who} · ${fmtFileSize(doc.file_size)} · ${timeAgo(doc.created_at)}</div>
+          </div>
+          <div class="doc-item-actions">
+            <button class="doc-action" onclick="cdrawerDownloadDoc('${(doc.storage_path||'').replace(/'/g, "\\'")}')">Download</button>
+          </div>
+        </div>`;
+    };
+
+    let html = '';
+    catOrder.forEach(cat => {
+      if (!tree[cat]) return;
+      const total = Object.values(tree[cat]).reduce((n, arr) => n + arr.length, 0);
+      html += `<div class="doc-cat-head">${catTitles[cat] || cat} <span class="doc-cat-count">(${total})</span></div>`;
+      // Years descending; "No year" last
+      const years = Object.keys(tree[cat]).sort((a, b) => {
+        if (a === 'No year') return 1; if (b === 'No year') return -1;
+        return Number(b) - Number(a);
       });
-      html += '</div>';
+      years.forEach(yr => {
+        html += `<div class="doc-year-head">${escapeHtml(yr)}</div>`;
+        html += '<div class="doc-list">' + tree[cat][yr].map(docRow).join('') + '</div>';
+      });
     });
     list.innerHTML = html;
   }
+
+  window.cdrawerCancelRequest = async function (id) {
+    if (!confirm('Cancel this document request?')) return;
+    const { error } = await sb.from('curator_files').delete().eq('id', id);
+    if (error) { alert('Could not cancel: ' + error.message); return; }
+    loadCdrawerDocs();
+  };
   window.cdrawerDownloadDoc = async function (storagePath) {
+    if (!storagePath) { alert('No file attached yet.'); return; }
     const { data, error } = await sb.storage.from('curator-files').createSignedUrl(storagePath, 60);
     if (error) { alert('Download failed: ' + error.message); return; }
     window.open(data.signedUrl, '_blank');
+  };
+
+  // ── Curator document actions: request a doc, or upload a file/receipt ──
+  const CDOC_CATEGORIES = [
+    ['secp','SECP'], ['fbr','FBR'], ['other_legal','Other Legal'],
+    ['bookkeeping','Bookkeeping'], ['other','Other']
+  ];
+  function cdocCategoryOptions(sel) {
+    return CDOC_CATEGORIES.map(([v,l]) =>
+      `<option value="${v}"${v===sel?' selected':''}>${l}</option>`).join('');
+  }
+  function cdocYearOptions() {
+    const y = new Date().getFullYear();
+    let out = '<option value="">— Year —</option>';
+    for (let i = y + 1; i >= y - 6; i--) out += `<option value="${i}"${i===y?' selected':''}>${i}</option>`;
+    return out;
+  }
+
+  window.cdrawerOpenDocAction = function (mode) {
+    const box = $('cdrawerDocActionBox');
+    if (!box) return;
+    if (mode === 'request') {
+      box.innerHTML = `
+        <div class="cdoc-action-title">Request a document from the client</div>
+        <input class="field-input" id="cdocReqLabel" placeholder="What do you need? e.g. CNIC copy, bank statement" style="margin-bottom:8px;">
+        <div class="cdoc-action-row">
+          <select class="field-input" id="cdocReqCategory">${cdocCategoryOptions('secp')}</select>
+          <select class="field-input" id="cdocReqYear">${cdocYearOptions()}</select>
+        </div>
+        <div class="cdoc-action-buttons">
+          <button class="btn-primary" onclick="cdrawerSubmitDocRequest()" type="button">Send request</button>
+          <button class="btn-secondary" onclick="cdrawerCloseDocAction()" type="button">Cancel</button>
+        </div>`;
+    } else {
+      box.innerHTML = `
+        <div class="cdoc-action-title">Upload a file</div>
+        <div class="cdoc-action-row">
+          <select class="field-input" id="cdocUpCategory">${cdocCategoryOptions('secp')}</select>
+          <select class="field-input" id="cdocUpYear">${cdocYearOptions()}</select>
+          <select class="field-input" id="cdocUpKind">
+            <option value="deliverable">Deliverable</option>
+            <option value="receipt">Receipt</option>
+            <option value="client_doc">Other document</option>
+          </select>
+        </div>
+        <input class="field-input" type="file" id="cdocUpFile" multiple style="margin-bottom:8px;">
+        <div class="cdoc-action-buttons">
+          <button class="btn-primary" onclick="cdrawerSubmitDocUpload()" type="button">Upload</button>
+          <button class="btn-secondary" onclick="cdrawerCloseDocAction()" type="button">Cancel</button>
+        </div>
+        <div id="cdocUpProgress"></div>`;
+    }
+    box.style.display = '';
+  };
+  window.cdrawerCloseDocAction = function () {
+    const box = $('cdrawerDocActionBox');
+    if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+  };
+
+  window.cdrawerSubmitDocRequest = async function () {
+    if (!cdrawerCurrentClient) return;
+    const label = ($('cdocReqLabel').value || '').trim();
+    const category = $('cdocReqCategory').value;
+    const year = $('cdocReqYear').value || null;
+    if (!label) { alert('Describe what you need.'); return; }
+    const { error } = await sb.from('curator_files').insert({
+      client_id: cdrawerCurrentClient.id,
+      category: category,
+      filename: label,           // human label until fulfilled
+      storage_path: null,
+      status: 'requested',
+      kind: 'client_doc',
+      requested_label: label,
+      requested_by: currentUser.id,
+      year_label: year,
+      uploader_role: 'advisor'
+    });
+    if (error) { alert('Could not create request: ' + error.message); return; }
+    cdrawerCloseDocAction();
+    loadCdrawerDocs();
+  };
+
+  window.cdrawerSubmitDocUpload = async function () {
+    if (!cdrawerCurrentClient) return;
+    const category = $('cdocUpCategory').value;
+    const year = $('cdocUpYear').value || null;
+    const kind = $('cdocUpKind').value;
+    const files = $('cdocUpFile').files;
+    if (!files || files.length === 0) { alert('Pick at least one file.'); return; }
+    const progress = $('cdocUpProgress');
+    for (const file of files) {
+      const note = document.createElement('div');
+      note.className = 'doc-progress';
+      note.textContent = 'Uploading ' + file.name + '…';
+      progress.prepend(note);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const yPart = year ? (year + '/') : '';
+      const path = `${cdrawerCurrentClient.id}/${category}/${yPart}${Date.now()}_${safeName}`;
+      const { error: stErr } = await sb.storage.from('curator-files').upload(path, file, { upsert: false, contentType: file.type });
+      if (stErr) { note.className = 'doc-progress error'; note.textContent = file.name + ': ' + stErr.message; continue; }
+      const { error } = await sb.from('curator_files').insert({
+        client_id: cdrawerCurrentClient.id,
+        category: category,
+        filename: file.name,
+        storage_path: path,
+        file_size: file.size,
+        mime_type: file.type || null,
+        uploaded_by: currentUser.id,
+        uploader_role: 'advisor',
+        status: 'fulfilled',
+        kind: kind,
+        year_label: year
+      });
+      if (error) { note.className = 'doc-progress error'; note.textContent = file.name + ': ' + error.message; continue; }
+      note.className = 'doc-progress done';
+      note.textContent = file.name + ' ✓';
+    }
+    setTimeout(() => { cdrawerCloseDocAction(); loadCdrawerDocs(); }, 600);
   };
 
   async function loadCdrawerMessages() {
