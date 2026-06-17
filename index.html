@@ -493,6 +493,30 @@
   }
   .ow-curator-form .cf-thanks.visible { display: block; }
   .ow-curator-form .cf-thanks strong { color: var(--ow-navy); }
+  .ow-curator-form .cf-thanks .cf-call-cta {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 11px 20px;
+    background: var(--ow-navy);
+    color: var(--ow-paper);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .ow-curator-form .cf-thanks .cf-call-cta:hover {
+    background: var(--ow-navy-soft, #16324a);
+    transform: translateY(-1px);
+  }
+  .ow-curator-form .cf-thanks .cf-call-note {
+    display: block;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--ow-ink-soft);
+    line-height: 1.45;
+  }
 
   /* ─── Services needed (checkbox grid) ─── */
   .ow-curator-form .cf-services {
@@ -1653,7 +1677,9 @@
 
           <div class="cf-thanks" id="cf-thanks">
             <strong>Thanks — we've got your details.</strong><br>
-            A CPA from our team will reach out within one business day for an advisory call to understand your business and walk you through next steps.
+            The fastest next step is a free 30-minute call with one of our CPAs to understand your business and walk you through what's next. Pick a time that suits you:
+            <a class="cf-call-cta" href="https://calendly.com/northnextventures/30min" target="_blank" rel="noopener">Book your free 30-min call →</a>
+            <span class="cf-call-note">Prefer we reach out first? No problem — a CPA from our team will be in touch within one business day either way.</span>
           </div>
         </form>
 
