@@ -7,20 +7,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --cream:        #fbf6ec;
-    --cream-2:      #f4ede0;
+    --cream:        #f7f8f9;
+    --cream-2:      #eef0f2;
     --paper:        #ffffff;
-    --ink:          #2d2418;
-    --ink-soft:     #6b5d4a;
-    --ink-faint:    #9a8d77;
-    --navy:         #0c3a4a;
-    --navy-soft:    #1a5468;
+    --ink:          #1f2227;
+    --ink-soft:     #5b6068;
+    --ink-faint:    #9aa0a8;
+    --navy:         #23262b;
+    --navy-soft:    #34383f;
     --gold:         #c9a87c;
     --gold-soft:    #e8dec4;
     --rose:         #ab4232;
-    --line:         #e8dec4;
-    --line-soft:    #f0e7d1;
-    --shadow:       0 14px 36px rgba(45, 36, 24, 0.06);
+    --line:         #e6e8eb;
+    --line-soft:    #f0f1f3;
+    --shadow:       0 14px 36px rgba(31, 34, 39, 0.07);
+
+    --sidebar-bg:   #23262b;
+    --sidebar-text: #9aa0a8;
+    --sidebar-active: #ffffff;
 
     --font-serif:   'Cormorant Garamond', Georgia, serif;
     --font-sans:    'Jost', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -61,7 +65,7 @@
   }
   .auth-brand { display: flex; align-items: center; gap: 12px; }
   .auth-brand-mark {
-    width: 28px; height: 28px; border-radius: 50%;
+    width: 30px; height: 30px; border-radius: 8px;
     background: linear-gradient(135deg, #e8dec4 0%, #c9a87c 100%);
   }
   .auth-brand-name {
@@ -173,7 +177,7 @@
   }
   .app-brand { display: flex; align-items: center; gap: 12px; }
   .app-brand-mark {
-    width: 24px; height: 24px; border-radius: 50%;
+    width: 26px; height: 26px; border-radius: 7px;
     background: linear-gradient(135deg, #e8dec4 0%, #c9a87c 100%);
   }
   .app-brand-name {
@@ -453,19 +457,19 @@
   @media (max-width: 720px) { .app-main { grid-template-columns: 1fr; } }
 
   .app-side {
-    background: var(--paper);
-    border-right: 1px solid var(--line);
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--navy-soft);
     padding: 24px 0;
   }
   @media (max-width: 720px) {
     .app-side {
       display: flex; overflow-x: auto;
-      padding: 0; border-right: none; border-bottom: 1px solid var(--line);
+      padding: 0; border-right: none; border-bottom: 1px solid var(--navy-soft);
     }
   }
   .app-nav-item {
     display: flex; align-items: center; gap: 10px;
-    padding: 11px 24px; font-size: 13px; color: var(--ink-soft);
+    padding: 11px 24px; font-size: 13px; color: var(--sidebar-text);
     cursor: pointer; border-left: 3px solid transparent;
     transition: all 0.15s;
   }
@@ -475,21 +479,22 @@
       padding: 14px 18px; flex-shrink: 0;
     }
   }
-  .app-nav-item:hover { color: var(--navy); background: var(--cream-2); }
+  .app-nav-item:hover { color: var(--sidebar-active); background: rgba(255,255,255,0.05); }
   .app-nav-item.active {
-    color: var(--navy); font-weight: 600;
-    border-left-color: var(--gold); background: var(--cream-2);
+    color: var(--sidebar-active); font-weight: 600;
+    border-left-color: var(--gold); background: rgba(255,255,255,0.07);
   }
   @media (max-width: 720px) {
     .app-nav-item.active { border-left-color: transparent; border-bottom-color: var(--gold); }
   }
   .app-nav-section {
     font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
-    color: var(--ink-faint); padding: 16px 24px 6px; font-weight: 700;
+    color: var(--sidebar-text); padding: 16px 24px 6px; font-weight: 700; opacity: 0.7;
   }
   @media (max-width: 720px) { .app-nav-section { display: none; } }
 
   .app-content { padding: 32px 40px; background: var(--cream); min-height: 100%; }
+  .app-content > .tab-pane.active { max-width: 1200px; margin: 0 auto; }
   @media (max-width: 720px) { .app-content { padding: 22px 18px; } }
   .tab-pane { display: none; }
   .tab-pane.active { display: block; }
@@ -823,10 +828,10 @@
     margin-bottom: 18px;
   }
   .cprofile-avatar {
-    width: 52px; height: 52px; border-radius: 50%;
-    background: var(--cream-2);
+    width: 52px; height: 52px; border-radius: 11px;
+    background: var(--navy);
     display: flex; align-items: center; justify-content: center;
-    font-weight: 600; font-size: 18px; color: var(--navy);
+    font-weight: 600; font-size: 18px; color: var(--gold-soft);
     flex-shrink: 0;
   }
   .cprofile-name {
