@@ -592,6 +592,23 @@
   .btn-gold:hover:not(:disabled) { background: #d4b88a; }
   .btn-gold:disabled { opacity: 0.6; cursor: not-allowed; }
 
+  .btn-danger {
+    background: transparent; color: #9a3b2e;
+    border: 1px solid #d8a99f; padding: 11px 24px;
+    border-radius: 4px; font-family: inherit;
+    font-size: 12px; letter-spacing: 1.5px;
+    text-transform: uppercase; font-weight: 700;
+    cursor: pointer;
+  }
+  .btn-danger:hover:not(:disabled) { background: #fbeae6; border-color: #9a3b2e; }
+  .btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .btn-row {
+    padding: 6px 12px; font-size: 10px; letter-spacing: 1px;
+    border-radius: 3px; margin-right: 6px; white-space: nowrap;
+  }
+  .btn-row:last-child { margin-right: 0; }
+
   .form-actions { display: flex; gap: 10px; margin-top: 20px; align-items: center; flex-wrap: wrap; }
   .form-msg { font-size: 12px; color: var(--ink-soft); }
   .form-msg.success { color: #1e5b2c; }
@@ -1851,16 +1868,10 @@
         <div class="pane-header">
           <p class="pane-eyebrow">Pipeline</p>
           <h1 class="pane-title">Leads</h1>
-          <p class="pane-sub">Everyone who's expressed interest via the OneWindow form. Click a row to view, change status, write notes, and send an invite.</p>
+          <p class="pane-sub">Everyone who's expressed interest via the OneWindow form. Talk it through, then convert to a client when you're ready to start — or delete if it's not going anywhere.</p>
         </div>
 
         <div class="filter-bar" id="leadFilters">
-          <button class="filter-pill active" data-filter="all">All</button>
-          <button class="filter-pill" data-filter="new">New</button>
-          <button class="filter-pill" data-filter="contacted">Contacted</button>
-          <button class="filter-pill" data-filter="qualified">Qualified</button>
-          <button class="filter-pill" data-filter="converted">Converted</button>
-          <button class="filter-pill" data-filter="dropped">Dropped</button>
           <input class="filter-search" type="search" id="leadSearch" placeholder="Search by name or email…">
         </div>
 
@@ -2404,13 +2415,10 @@
 
   function renderLeads() {
     const container = $('leadsContainer');
-    const activeFilter = document.querySelector('#leadFilters .filter-pill.active').dataset.filter;
     const searchTerm = ($('leadSearch').value || '').trim().toLowerCase();
 
-    let filtered = leadsCache.slice();
-    if (activeFilter !== 'all') {
-      filtered = filtered.filter(l => (l.status || 'new') === activeFilter);
-    }
+    // Active leads = not yet converted to a client. Converted ones move to Clients.
+    let filtered = leadsCache.filter(l => !l.converted_to_client_id);
     if (searchTerm) {
       filtered = filtered.filter(l =>
         (l.name || '').toLowerCase().includes(searchTerm) ||
@@ -2422,8 +2430,8 @@
     if (filtered.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
-          <h3 class="empty-state-title">No leads match.</h3>
-          <p class="empty-state-sub">${leadsCache.length === 0 ? 'Submissions from the OneWindow form will appear here.' : 'Try a different filter or search.'}</p>
+          <h3 class="empty-state-title">No leads yet.</h3>
+          <p class="empty-state-sub">${leadsCache.length === 0 ? 'Submissions from the OneWindow form will appear here.' : 'Try a different search.'}</p>
         </div>`;
       return;
     }
@@ -2434,14 +2442,14 @@
           <tr>
             <th>Name & email</th>
             <th>Business</th>
-            <th>Status</th>
             <th>Received</th>
             <th>Last contact</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>`;
     filtered.forEach(lead => {
-      const status = lead.status || 'new';
+      const firstName = (lead.name || '').split(' ')[0] || 'client';
       html += `
         <tr onclick="openLeadDrawer('${lead.id}')">
           <td>
@@ -2453,22 +2461,20 @@
             <div class="col-meta">${lead.phone ? escapeHtml(lead.phone) : ''}</div>
             ${renderServiceChips(lead.services_requested, lead.services_other)}
           </td>
-          <td><span class="pill ${status}">${escapeHtml(status)}</span></td>
           <td class="col-tight col-meta">${fmtDate(lead.created_at)}</td>
           <td class="col-tight col-meta">${lead.last_contacted_at ? timeAgo(lead.last_contacted_at) : '—'}</td>
+          <td class="col-tight" onclick="event.stopPropagation()">
+            <button class="btn-gold btn-row" onclick="convertLeadFromRow('${lead.id}')">Convert to client</button>
+            <button class="btn-danger btn-row" onclick="deleteLead('${lead.id}')">Delete</button>
+          </td>
         </tr>`;
     });
     html += '</tbody></table>';
     container.innerHTML = html;
   }
 
-  // Lead filters wiring
+  // Lead search wiring
   document.addEventListener('click', (e) => {
-    if (e.target.matches('#leadFilters .filter-pill')) {
-      document.querySelectorAll('#leadFilters .filter-pill').forEach(p => p.classList.remove('active'));
-      e.target.classList.add('active');
-      renderLeads();
-    }
     if (e.target.matches('#clientFilters .filter-pill')) {
       document.querySelectorAll('#clientFilters .filter-pill').forEach(p => p.classList.remove('active'));
       e.target.classList.add('active');
@@ -2496,20 +2502,12 @@
   };
 
   function renderLeadDrawer(lead) {
-    const status = lead.status || 'new';
     const isConverted = !!lead.converted_to_client_id;
+    const firstName = (lead.name || '').split(' ')[0] || 'client';
 
     $('leadDrawerTitle').textContent = lead.name || 'Lead';
 
-    const statusOptions = ['new','contacted','qualified','converted','dropped']
-      .map(s => `<option value="${s}" ${s === status ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`)
-      .join('');
-
     $('leadDrawerBody').innerHTML = `
-      <div class="detail-row">
-        <div class="detail-label">Status</div>
-        <div class="detail-value"><span class="pill ${status}">${escapeHtml(status)}</span></div>
-      </div>
       <div class="detail-row">
         <div class="detail-label">Name</div>
         <div class="detail-value">${escapeHtml(lead.name || '—')}</div>
@@ -2556,19 +2554,15 @@
       </div>
 
       <div class="drawer-section">
-        <h4 class="drawer-section-title">Manage this lead</h4>
+        <h4 class="drawer-section-title">Notes</h4>
         <div class="form-grid">
-          <div class="full">
-            <label class="field-label">Status</label>
-            <select class="field-select" id="drawerStatus">${statusOptions}</select>
-          </div>
           <div class="full">
             <label class="field-label">Internal notes</label>
             <textarea class="field-textarea" id="drawerNotes" placeholder="Notes from your calls, things to remember…">${escapeHtml(lead.notes_internal || '')}</textarea>
           </div>
         </div>
         <div class="form-actions">
-          <button class="btn-primary" id="drawerSaveBtn" onclick="saveLeadUpdates()">Save changes</button>
+          <button class="btn-primary" id="drawerSaveBtn" onclick="saveLeadUpdates()">Save notes</button>
           <button class="btn-ghost" onclick="markLastContacted()">Mark contacted now</button>
           <span class="form-msg" id="drawerMsg"></span>
         </div>
@@ -2576,7 +2570,7 @@
 
       ${isConverted ? `
         <div class="drawer-section">
-          <h4 class="drawer-section-title">Conversion</h4>
+          <h4 class="drawer-section-title">Converted to client</h4>
           <div class="detail-row">
             <div class="detail-label">Converted</div>
             <div class="detail-value">${fmtDateTime(lead.converted_at)}</div>
@@ -2588,18 +2582,27 @@
         </div>
       ` : `
         <div class="invite-banner">
-          <h4 class="invite-banner-title">Send Curator invite</h4>
+          <h4 class="invite-banner-title">Convert to client</h4>
           <p class="invite-banner-body">
-            This creates a Curator portal account for <strong>${escapeHtml(lead.email)}</strong> and emails them a link to set their password. The lead will be marked converted.
+            Use this once you've agreed to start work with <strong>${escapeHtml(firstName)}</strong>. It creates their Curator client record and portal account, and emails them a link to set their password.
           </p>
-          <button class="btn-gold" id="inviteBtn" onclick="sendInvite()">Send invite to ${escapeHtml((lead.name || '').split(' ')[0] || 'client')}</button>
+          <button class="btn-gold" id="inviteBtn" onclick="sendInvite()">Convert ${escapeHtml(firstName)} to client</button>
           <div class="form-msg" id="inviteMsg" style="margin-top:8px;"></div>
         </div>
       `}
+
+      <div class="drawer-section">
+        <h4 class="drawer-section-title">Danger zone</h4>
+        <p class="invite-banner-body" style="margin-bottom:12px;">
+          Deleting removes this lead completely. The same person can submit the form again later as a fresh lead.
+        </p>
+        <button class="btn-danger" id="deleteLeadBtn" onclick="deleteLead('${lead.id}')">Delete lead</button>
+        <div class="form-msg" id="deleteMsg" style="margin-top:8px;"></div>
+      </div>
     `;
   }
 
-  // Save lead status + notes
+  // Save lead notes
   window.saveLeadUpdates = async function () {
     if (!currentLeadId) return;
     const btn = $('drawerSaveBtn');
@@ -2608,7 +2611,6 @@
     msg.textContent = ''; msg.className = 'form-msg';
 
     const updates = {
-      status: $('drawerStatus').value,
       notes_internal: $('drawerNotes').value.trim() || null,
     };
 
@@ -2619,7 +2621,7 @@
         .eq('id', currentLeadId)
         .select()
         .single();
-      btn.disabled = false; btn.textContent = 'Save changes';
+      btn.disabled = false; btn.textContent = 'Save notes';
       if (error) {
         msg.textContent = error.message || 'Save failed.';
         msg.className = 'form-msg error';
@@ -2633,9 +2635,43 @@
       renderLeads();
       setTimeout(() => { msg.textContent = ''; msg.className = 'form-msg'; }, 3000);
     } catch (err) {
-      btn.disabled = false; btn.textContent = 'Save changes';
+      btn.disabled = false; btn.textContent = 'Save notes';
       msg.textContent = 'Network error.';
       msg.className = 'form-msg error';
+    }
+  };
+
+  // Convert directly from a list row (opens drawer, then triggers convert)
+  window.convertLeadFromRow = function (leadId) {
+    openLeadDrawer(leadId);
+    setTimeout(() => { if (typeof sendInvite === 'function') sendInvite(); }, 150);
+  };
+
+  // Delete a lead entirely (with confirm). The person can re-apply later.
+  window.deleteLead = async function (leadId) {
+    const id = leadId || currentLeadId;
+    if (!id) return;
+    const lead = leadsCache.find(l => l.id === id);
+    const who = lead ? (lead.name || lead.email || 'this lead') : 'this lead';
+    if (!confirm(`Delete ${who}? This removes the lead completely. They can submit the form again later as a fresh lead.`)) return;
+
+    const msg = $('deleteMsg');
+    if (msg) { msg.textContent = 'Deleting…'; msg.className = 'form-msg'; }
+
+    try {
+      const { error } = await sb
+        .from('onewindow_curator_leads')
+        .delete()
+        .eq('id', id);
+      if (error) {
+        if (msg) { msg.textContent = error.message || 'Delete failed.'; msg.className = 'form-msg error'; }
+        return;
+      }
+      leadsCache = leadsCache.filter(l => l.id !== id);
+      renderLeads();
+      if (currentLeadId === id) closeLeadDrawer();
+    } catch (err) {
+      if (msg) { msg.textContent = 'Network error.'; msg.className = 'form-msg error'; }
     }
   };
 
