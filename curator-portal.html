@@ -200,6 +200,19 @@
     text-transform: uppercase;
     margin-left: 10px;
   }
+  .advisor-select {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 5px 8px;
+    max-width: 150px;
+    cursor: pointer;
+  }
+  .advisor-select:hover { border-color: var(--gold); }
+  .advisor-select:disabled { opacity: 0.5; cursor: wait; }
   .app-user { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--gold-soft); }
   .app-user-name { font-weight: 500; color: var(--cream); }
   .app-signout {
@@ -1941,9 +1954,34 @@
         </div>
       </section>
 
-    </main>
-  </div>
-</div>
+      <section class="tab-pane" id="tab-advisors" data-role="advisor">
+        <div class="pane-header">
+          <p class="pane-eyebrow">Team</p>
+          <h1 class="pane-title">Advisors</h1>
+          <p class="pane-sub">Advisors you've added. Each only sees the clients you assign to them. Assign clients from the Clients tab.</p>
+        </div>
+        <div id="advisorsContainer">
+          <div class="empty-state"><p class="empty-state-sub">Loading…</p></div>
+        </div>
+        <div class="card" style="margin-top:24px;">
+          <h3 class="card-title">Invite an advisor</h3>
+          <p class="card-sub">They'll receive an email with a link to set their password, then they can sign in here and work their assigned clients.</p>
+          <div class="form-grid">
+            <div>
+              <label class="field-label">Full name</label>
+              <input class="field-input" type="text" id="newAdvName" placeholder="e.g. Ayesha Khan">
+            </div>
+            <div>
+              <label class="field-label">Email</label>
+              <input class="field-input" type="email" id="newAdvEmail" placeholder="advisor@example.com">
+            </div>
+          </div>
+          <div style="margin-top:16px;display:flex;align-items:center;gap:14px;">
+            <button class="btn-gold" id="inviteAdvBtn" onclick="inviteAdvisor()">Invite advisor</button>
+            <span class="form-msg" id="inviteAdvMsg"></span>
+          </div>
+        </div>
+      </section>
 
 <!-- ═══════ Lead detail drawer (advisor only) ═══════ -->
 <div class="drawer-overlay" id="leadDrawerOverlay" onclick="closeLeadDrawer()"></div>
@@ -1988,10 +2026,12 @@
   let currentClient = null;     // for client mode
   let currentAdvisor = null;    // for advisor mode
   let isAdvisorMode = false;
+  let isSuperAdmin = false;     // super_admin sees leads, all clients, assign + advisor mgmt
 
   // Cache for lead/client data
   let leadsCache = [];
   let clientsCache = [];
+  let advisorsCache = [];       // active advisors (for assign dropdown + mgmt tab)
   let currentLeadId = null;
   let currentClientId = null;
 
@@ -2066,8 +2106,9 @@
 
     // Lazy-load tab data
     if (isAdvisorMode) {
-      if (name === 'leads' && leadsCache.length === 0) loadLeads();
+      if (name === 'leads' && isSuperAdmin && leadsCache.length === 0) loadLeads();
       if (name === 'clients' && clientsCache.length === 0) loadClients();
+      if (name === 'advisors' && isSuperAdmin) loadAdvisors();
     }
   };
 
@@ -2077,12 +2118,21 @@
     nav.innerHTML = '';
 
     if (isAdvisorMode) {
-      nav.innerHTML = `
-        <div class="app-nav-section">Advisor</div>
-        <div class="app-nav-item active" data-tab="leads"           onclick="switchTab('leads')">Leads</div>
-        <div class="app-nav-item"        data-tab="clients"         onclick="switchTab('clients')">Clients</div>
-        <div class="app-nav-item"        data-tab="advisor-profile" onclick="switchTab('advisor-profile')">Profile</div>
-      `;
+      if (isSuperAdmin) {
+        nav.innerHTML = `
+          <div class="app-nav-section">Advisor</div>
+          <div class="app-nav-item active" data-tab="leads"           onclick="switchTab('leads')">Leads</div>
+          <div class="app-nav-item"        data-tab="clients"         onclick="switchTab('clients')">Clients</div>
+          <div class="app-nav-item"        data-tab="advisors"        onclick="switchTab('advisors')">Advisors</div>
+          <div class="app-nav-item"        data-tab="advisor-profile" onclick="switchTab('advisor-profile')">Profile</div>
+        `;
+      } else {
+        nav.innerHTML = `
+          <div class="app-nav-section">Advisor</div>
+          <div class="app-nav-item active" data-tab="clients"         onclick="switchTab('clients')">Clients</div>
+          <div class="app-nav-item"        data-tab="advisor-profile" onclick="switchTab('advisor-profile')">Profile</div>
+        `;
+      }
     } else {
       nav.innerHTML = `
         <div class="app-nav-section">Workspace</div>
@@ -2219,7 +2269,10 @@
       // ── ADVISOR MODE ──
       isAdvisorMode = true;
       currentAdvisor = advProfile;
-      $('brandSubtitle').innerHTML = '<span class="advisor-badge">Advisor</span>';
+      isSuperAdmin = (advProfile.role === 'super_admin');
+      $('brandSubtitle').innerHTML = isSuperAdmin
+        ? '<span class="advisor-badge">Super Admin</span>'
+        : '<span class="advisor-badge">Advisor</span>';
       $('userNameTop').textContent = advProfile.full_name || currentUser.email;
       $('adv-name').value = advProfile.full_name || '';
       $('adv-email').value = currentUser.email || '';
@@ -2228,11 +2281,16 @@
 
       renderSidebar();
       showOnlyRolePanes('advisor');
-      switchTab('leads');
+      switchTab(isSuperAdmin ? 'leads' : 'clients');
       // Hide notification bell in advisor mode
       const _nbWrap = $('notifWrap');
       if (_nbWrap) _nbWrap.style.display = 'none';
-      loadLeads();
+
+      // Leads + advisor roster are super-admin only.
+      if (isSuperAdmin) {
+        loadLeads();
+        loadAdvisors();
+      }
       // Preload clients so activity badges can compute even before
       // the advisor visits the Clients tab. This is what feeds the
       // activityMap that drives the sidebar count and drawer badges.
@@ -2752,6 +2810,123 @@
     renderClients();
   }
 
+  // ─── Advisor assignment (super_admin only) ───
+
+  // Build the per-row advisor <select>. Reassign is a direct Supabase
+  // update — super_admin RLS already permits updating any client row,
+  // so no Worker round-trip is needed.
+  function advisorSelectHTML(client) {
+    const current = client.assigned_advisor_id || '';
+    let opts = `<option value="">— Unassigned —</option>`;
+    advisorsCache.forEach(a => {
+      const sel = (a.user_id === current) ? ' selected' : '';
+      opts += `<option value="${a.user_id}"${sel}>${escapeHtml(a.full_name || a.user_id)}</option>`;
+    });
+    return `<select class="advisor-select" onchange="assignClient('${client.id}', this.value, this)">${opts}</select>`;
+  }
+
+  window.assignClient = async function (clientId, advisorId, el) {
+    const prev = el ? el.dataset.prev : null;
+    if (el) { el.disabled = true; }
+    const { data, error } = await sb
+      .from('curator_clients')
+      .update({ assigned_advisor_id: advisorId || null })
+      .eq('id', clientId)
+      .select()
+      .single();
+    if (el) { el.disabled = false; }
+    if (error) {
+      alert('Could not reassign: ' + error.message);
+      if (el && prev != null) el.value = prev;
+      return;
+    }
+    const idx = clientsCache.findIndex(c => c.id === clientId);
+    if (idx >= 0) clientsCache[idx] = data;
+    if (el) el.dataset.prev = advisorId || '';
+  };
+
+  // ─── Advisors roster (super_admin only) ───
+  async function loadAdvisors() {
+    const { data, error } = await sb
+      .from('curator_advisor_profiles')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error) { console.error('loadAdvisors:', error); return; }
+    advisorsCache = data || [];
+    renderAdvisors();
+  }
+
+  function renderAdvisors() {
+    const container = $('advisorsContainer');
+    if (!container) return;
+    if (advisorsCache.length === 0) {
+      container.innerHTML = `<div class="empty-state"><h3 class="empty-state-title">No advisors yet.</h3><p class="empty-state-sub">Invite an advisor below to start assigning clients.</p></div>`;
+      return;
+    }
+    let html = `
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Role</th><th>Active</th><th>Clients</th></tr></thead>
+        <tbody>`;
+    advisorsCache.forEach(a => {
+      const count = clientsCache.filter(c => c.assigned_advisor_id === a.user_id).length;
+      const roleLabel = a.role === 'super_admin' ? 'Super Admin' : 'Advisor';
+      html += `
+        <tr>
+          <td><div class="col-name">${escapeHtml(a.full_name || '(no name)')}</div></td>
+          <td><span class="pill">${roleLabel}</span></td>
+          <td class="col-meta">${a.is_active ? 'Yes' : 'No'}</td>
+          <td class="col-meta">${count}</td>
+        </tr>`;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  }
+
+  // Invite a new advisor. Creating an auth user requires the service role,
+  // so this goes through the curator-admin Worker (same pattern as
+  // /invite-client). The Worker creates the auth user, inserts the
+  // curator_advisor_profiles row with role='advisor', and emails a
+  // set-password link.
+  window.inviteAdvisor = async function () {
+    const nameEl = $('newAdvName');
+    const emailEl = $('newAdvEmail');
+    const msg = $('inviteAdvMsg');
+    const btn = $('inviteAdvBtn');
+    const name = (nameEl.value || '').trim();
+    const email = (emailEl.value || '').trim();
+    if (!name || !email) { msg.textContent = 'Name and email required.'; msg.className = 'form-msg error'; return; }
+
+    btn.disabled = true; btn.textContent = 'Inviting…';
+    msg.textContent = ''; msg.className = 'form-msg';
+
+    const { data: token } = await sb.auth.getSession();
+    const accessToken = token && token.session && token.session.access_token;
+
+    try {
+      const res = await fetch(CURATOR_ADMIN_URL + '/invite-advisor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
+        body: JSON.stringify({ full_name: name, email: email })
+      });
+      const data = await res.json();
+      btn.disabled = false; btn.textContent = 'Invite advisor';
+      if (!res.ok || !data.ok) {
+        msg.textContent = data.error || 'Invite failed.';
+        msg.className = 'form-msg error';
+        return;
+      }
+      msg.textContent = 'Advisor invited. They will receive a set-password email.';
+      msg.className = 'form-msg success';
+      nameEl.value = ''; emailEl.value = '';
+      await loadAdvisors();
+      renderClients();  // refresh assign dropdowns with the new advisor
+    } catch (err) {
+      btn.disabled = false; btn.textContent = 'Invite advisor';
+      msg.textContent = 'Network error.';
+      msg.className = 'form-msg error';
+    }
+  };
+
   function renderClients() {
     const container = $('clientsContainer');
     const activeFilter = document.querySelector('#clientFilters .filter-pill.active').dataset.filter;
@@ -2786,6 +2961,7 @@
             <th>Business</th>
             <th>Activity</th>
             <th>Status</th>
+            ${isSuperAdmin ? '<th>Advisor</th>' : ''}
             <th>Joined</th>
             <th>Last active</th>
           </tr>
@@ -2820,6 +2996,7 @@
           </td>
           <td class="client-activity-cell">${activityCell}</td>
           <td><span class="pill client-${status}">${escapeHtml(status)}</span></td>
+          ${isSuperAdmin ? `<td class="col-tight" onclick="event.stopPropagation()">${advisorSelectHTML(client)}</td>` : ''}
           <td class="col-tight col-meta">${fmtDate(client.created_at)}</td>
           <td class="col-tight col-meta">${client.last_active_at ? timeAgo(client.last_active_at) : '—'}</td>
         </tr>`;
