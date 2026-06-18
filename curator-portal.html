@@ -213,6 +213,43 @@
   }
   .advisor-select:hover { border-color: var(--gold); }
   .advisor-select:disabled { opacity: 0.5; cursor: wait; }
+  .inchat-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--navy);
+    background: rgba(26, 84, 104, 0.10);
+    border: 1px solid var(--navy-soft);
+    border-radius: 3px;
+    padding: 1px 7px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--navy);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+  }
+  .btn-ghost:hover { border-color: var(--gold); color: var(--ink); }
+  .prospect-banner {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--gold);
+    border-radius: 4px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+  }
+  .prospect-banner-text { flex: 1 1 100%; font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+  .prospect-email-check { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-soft); cursor: pointer; }
   .app-user { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--gold-soft); }
   .app-user-name { font-weight: 500; color: var(--cream); }
   .app-signout {
@@ -1890,6 +1927,9 @@
         </div>
 
         <div class="filter-bar" id="leadFilters">
+          <button class="filter-pill active" data-leadfilter="all">All</button>
+          <button class="filter-pill" data-leadfilter="new">New</button>
+          <button class="filter-pill" data-leadfilter="in_chat">In chat</button>
           <input class="filter-search" type="search" id="leadSearch" placeholder="Search by name or email…">
         </div>
 
@@ -2027,6 +2067,7 @@
   let currentAdvisor = null;    // for advisor mode
   let isAdvisorMode = false;
   let isSuperAdmin = false;     // super_admin sees leads, all clients, assign + advisor mgmt
+  let isProspectClient = false; // client-mode prospect: messaging-only until onboarded
 
   // Cache for lead/client data
   let leadsCache = [];
@@ -2134,14 +2175,22 @@
         `;
       }
     } else {
-      nav.innerHTML = `
-        <div class="app-nav-section">Workspace</div>
-        <div class="app-nav-item active" data-tab="home"      onclick="switchTab('home')">Home</div>
-        <div class="app-nav-item"        data-tab="tasks"     onclick="switchTab('tasks')">Tasks</div>
-        <div class="app-nav-item"        data-tab="documents" onclick="switchTab('documents')">Documents</div>
-        <div class="app-nav-item"        data-tab="messages"  onclick="switchTab('messages')">Messages</div>
-        <div class="app-nav-item"        data-tab="profile"   onclick="switchTab('profile')">Profile</div>
-      `;
+      if (isProspectClient) {
+        nav.innerHTML = `
+          <div class="app-nav-section">Workspace</div>
+          <div class="app-nav-item active" data-tab="messages"  onclick="switchTab('messages')">Messages</div>
+          <div class="app-nav-item"        data-tab="profile"   onclick="switchTab('profile')">Profile</div>
+        `;
+      } else {
+        nav.innerHTML = `
+          <div class="app-nav-section">Workspace</div>
+          <div class="app-nav-item active" data-tab="home"      onclick="switchTab('home')">Home</div>
+          <div class="app-nav-item"        data-tab="tasks"     onclick="switchTab('tasks')">Tasks</div>
+          <div class="app-nav-item"        data-tab="documents" onclick="switchTab('documents')">Documents</div>
+          <div class="app-nav-item"        data-tab="messages"  onclick="switchTab('messages')">Messages</div>
+          <div class="app-nav-item"        data-tab="profile"   onclick="switchTab('profile')">Profile</div>
+        `;
+      }
     }
   }
 
@@ -2306,10 +2355,13 @@
       await ensureClientRow(currentUser);
       await loadProfile();
 
+      // A prospect client sees a messaging-only portal until onboarded.
+      isProspectClient = !!(currentClient && (currentClient.status || 'prospect') === 'prospect');
+
       const displayName = currentClient && currentClient.full_name
         ? currentClient.full_name.split(' ')[0]
         : (currentUser.email || '').split('@')[0];
-      $('brandSubtitle').textContent = 'client portal';
+      $('brandSubtitle').textContent = isProspectClient ? 'let\u2019s talk' : 'client portal';
       $('userNameTop').textContent = currentClient && currentClient.full_name ? currentClient.full_name : currentUser.email;
       $('welcomeName').textContent = displayName || 'friend';
       $('stat-tasks').textContent = '0';
@@ -2318,14 +2370,16 @@
 
       renderSidebar();
       showOnlyRolePanes('client');
-      switchTab('home');
+      switchTab(isProspectClient ? 'messages' : 'home');
       // Show notification bell for client mode
       const _nbWrap = $('notifWrap');
       if (_nbWrap) _nbWrap.style.display = '';
       // Update kickoff banner state and load workspace counts
-      updateKickoffBanner();
-      loadClientTasks();
-      loadClientDocs();
+      if (!isProspectClient) {
+        updateKickoffBanner();
+        loadClientTasks();
+        loadClientDocs();
+      }
       loadClientMessages();
     }
 
@@ -2479,9 +2533,17 @@
   function renderLeads() {
     const container = $('leadsContainer');
     const searchTerm = ($('leadSearch').value || '').trim().toLowerCase();
+    const lf = document.querySelector('#leadFilters .filter-pill.active');
+    const leadFilter = lf ? lf.dataset.leadfilter : 'all';
 
-    // Active leads = not yet converted to a client. Converted ones move to Clients.
+    // Leads list = anything not yet fully converted to a client.
+    // A lead that's "in_chat" (a prospect) stays here until onboarding starts.
     let filtered = leadsCache.filter(l => !l.converted_to_client_id);
+    if (leadFilter === 'new') {
+      filtered = filtered.filter(l => (l.status || 'new') !== 'in_chat');
+    } else if (leadFilter === 'in_chat') {
+      filtered = filtered.filter(l => l.status === 'in_chat');
+    }
     if (searchTerm) {
       filtered = filtered.filter(l =>
         (l.name || '').toLowerCase().includes(searchTerm) ||
@@ -2494,7 +2556,7 @@
       container.innerHTML = `
         <div class="empty-state">
           <h3 class="empty-state-title">No leads yet.</h3>
-          <p class="empty-state-sub">${leadsCache.length === 0 ? 'Submissions from the OneWindow form will appear here.' : 'Try a different search.'}</p>
+          <p class="empty-state-sub">${leadsCache.length === 0 ? 'Submissions from the OneWindow form will appear here.' : 'Try a different filter or search.'}</p>
         </div>`;
       return;
     }
@@ -2512,11 +2574,18 @@
         </thead>
         <tbody>`;
     filtered.forEach(lead => {
-      const firstName = (lead.name || '').split(' ')[0] || 'client';
+      const inChat = lead.status === 'in_chat';
+      const chatBadge = inChat ? ' <span class="inchat-badge">In chat</span>' : '';
+      const actions = inChat
+        ? `<button class="btn-gold btn-row" onclick="convertLeadFromRow('${lead.id}')">Start onboarding</button>
+           <button class="btn-danger btn-row" onclick="deleteLead('${lead.id}')">Delete</button>`
+        : `<button class="btn-gold btn-row" onclick="inviteToChat('${lead.id}')">Invite to chat</button>
+           <button class="btn-ghost btn-row" onclick="convertLeadFromRow('${lead.id}')">Convert now</button>
+           <button class="btn-danger btn-row" onclick="deleteLead('${lead.id}')">Delete</button>`;
       html += `
         <tr onclick="openLeadDrawer('${lead.id}')">
           <td>
-            <div class="col-name">${escapeHtml(lead.name)}</div>
+            <div class="col-name">${escapeHtml(lead.name)}${chatBadge}</div>
             <div class="col-meta">${escapeHtml(lead.email)}</div>
           </td>
           <td>
@@ -2527,8 +2596,7 @@
           <td class="col-tight col-meta">${fmtDate(lead.created_at)}</td>
           <td class="col-tight col-meta">${lead.last_contacted_at ? timeAgo(lead.last_contacted_at) : '—'}</td>
           <td class="col-tight" onclick="event.stopPropagation()">
-            <button class="btn-gold btn-row" onclick="convertLeadFromRow('${lead.id}')">Convert to client</button>
-            <button class="btn-danger btn-row" onclick="deleteLead('${lead.id}')">Delete</button>
+            ${actions}
           </td>
         </tr>`;
     });
@@ -2542,6 +2610,11 @@
       document.querySelectorAll('#clientFilters .filter-pill').forEach(p => p.classList.remove('active'));
       e.target.classList.add('active');
       renderClients();
+    }
+    if (e.target.matches('#leadFilters .filter-pill')) {
+      document.querySelectorAll('#leadFilters .filter-pill').forEach(p => p.classList.remove('active'));
+      e.target.classList.add('active');
+      renderLeads();
     }
   });
   document.addEventListener('input', (e) => {
@@ -2771,7 +2844,7 @@
       const res = await fetch(CURATOR_ADMIN_URL + '/invite-client', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
-        body: JSON.stringify({ lead_id: currentLeadId })
+        body: JSON.stringify({ lead_id: currentLeadId, mode: 'full' })
       });
       const data = await res.json();
       btn.disabled = false;
@@ -2792,6 +2865,78 @@
       btn.disabled = false; btn.textContent = 'Retry invite';
       msg.textContent = 'Network error.';
       msg.className = 'form-msg error';
+    }
+  };
+
+  // Invite a lead to a pre-onboarding chat (prospect). Creates a
+  // messaging-only portal account; the lead stays in the Leads tab
+  // under "In chat" until you click Start onboarding.
+  window.inviteToChat = async function (leadId) {
+    const id = leadId || currentLeadId;
+    if (!id) return;
+    const lead = leadsCache.find(l => l.id === id);
+    const who = lead ? (lead.name || lead.email || 'this lead') : 'this lead';
+    if (!confirm(`Invite ${who} to a private chat? They'll get a lighter "let's talk" email to set a password and message you — no full onboarding yet.`)) return;
+
+    const { data: token } = await sb.auth.getSession();
+    const accessToken = token && token.session && token.session.access_token;
+
+    try {
+      const res = await fetch(CURATOR_ADMIN_URL + '/invite-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
+        body: JSON.stringify({ lead_id: id, mode: 'prospect' })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data.error || 'Chat invite failed.');
+        return;
+      }
+      await loadLeads();
+      // Reflect the new prospect in the Clients tab too.
+      if (typeof loadClients === 'function') loadClients();
+    } catch (err) {
+      alert('Network error sending chat invite.');
+    }
+  };
+
+  // Promote a prospect to active (full onboarding). Unlocks Tasks/Docs/Home
+  // for the client and optionally emails them the onboarding link.
+  window.startOnboarding = async function (clientId) {
+    const id = clientId || currentClientId;
+    if (!id) return;
+    const sendEmail = !!($('onboardSendEmail') && $('onboardSendEmail').checked);
+    if (!confirm(`Start onboarding for this client? This unlocks the full portal for them${sendEmail ? ' and emails them the onboarding link' : ''}.`)) return;
+
+    const btn = $('startOnboardingBtn');
+    const msg = $('onboardMsg');
+    if (btn) { btn.disabled = true; btn.textContent = 'Starting…'; }
+    if (msg) { msg.textContent = ''; msg.className = 'form-msg'; }
+
+    const { data: token } = await sb.auth.getSession();
+    const accessToken = token && token.session && token.session.access_token;
+
+    try {
+      const res = await fetch(CURATOR_ADMIN_URL + '/promote-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
+        body: JSON.stringify({ client_id: id, send_email: sendEmail })
+      });
+      const data = await res.json();
+      if (btn) btn.disabled = false;
+      if (!res.ok || !data.ok) {
+        if (msg) { msg.textContent = data.error || 'Could not start onboarding.'; msg.className = 'form-msg error'; }
+        if (btn) btn.textContent = 'Retry';
+        return;
+      }
+      if (msg) { msg.textContent = 'Onboarding started.'; msg.className = 'form-msg success'; }
+      // Refresh both tabs and close the drawer shortly.
+      if (typeof loadClients === 'function') await loadClients();
+      if (typeof loadLeads === 'function') await loadLeads();
+      setTimeout(() => { if (typeof closeClientDrawer === 'function') closeClientDrawer(); }, 1400);
+    } catch (err) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Retry'; }
+      if (msg) { msg.textContent = 'Network error.'; msg.className = 'form-msg error'; }
     }
   };
 
@@ -3046,6 +3191,20 @@
           </div>
         </div>
       </div>
+
+      ${(isSuperAdmin && status === 'prospect') ? `
+      <div class="prospect-banner">
+        <div class="prospect-banner-text">
+          <strong>This is a prospect.</strong> They can only message you right now — Tasks, Documents, and Home are locked until you start onboarding.
+        </div>
+        <label class="prospect-email-check">
+          <input type="checkbox" id="onboardSendEmail" checked>
+          <span>Email them the onboarding link</span>
+        </label>
+        <button class="btn-gold" id="startOnboardingBtn" onclick="startOnboarding('${client.id}')">Start onboarding</button>
+        <span class="form-msg" id="onboardMsg"></span>
+      </div>
+      ` : ''}
 
       <!-- Messages — collapsible, sits near the top; auto-opens on new message -->
       <div id="cdrawer-messages" class="cdrawer-msg-panel">
