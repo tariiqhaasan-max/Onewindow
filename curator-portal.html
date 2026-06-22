@@ -250,6 +250,33 @@
   }
   .prospect-banner-text { flex: 1 1 100%; font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
   .prospect-email-check { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-soft); cursor: pointer; }
+  .lifecycle-bar {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--line);
+    border-radius: 4px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+  .lifecycle-bar.warn   { border-left-color: var(--gold); }
+  .lifecycle-bar.danger { border-left-color: #a3372a; background: #fdf6f4; }
+  .lifecycle-text { flex: 1 1 100%; font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+  .btn-danger {
+    background: #a3372a;
+    color: #fff;
+    border: none;
+    border-radius: 18px;
+    padding: 7px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font-sans);
+  }
+  .btn-danger:hover { background: #8c2e23; }
   .app-user { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--gold-soft); }
   .app-user-name { font-weight: 500; color: var(--cream); }
   .app-signout {
@@ -703,6 +730,7 @@
   .pill.client-prospect { background: #eef5f8; color: #0c3a4a; border-color: #cde0e8; }
   .pill.client-active   { background: #ecf6ee; color: #1e5b2c; border-color: #c7e3cd; }
   .pill.client-dormant  { background: #f7f3eb; color: #6b5d4a; border-color: #e8dec4; }
+  .pill.client-closing  { background: #fbe9e6; color: #a3372a; border-color: #f0c9c1; }
 
   /* Filters bar */
   .filter-bar {
@@ -1953,6 +1981,7 @@
           <button class="filter-pill" data-filter="prospect">Prospect</button>
           <button class="filter-pill" data-filter="active">Active</button>
           <button class="filter-pill" data-filter="dormant">Dormant</button>
+          <button class="filter-pill" data-filter="closing">Closing</button>
           <input class="filter-search" type="search" id="clientSearch" placeholder="Search by name or email…">
         </div>
 
@@ -2068,6 +2097,7 @@
   let isAdvisorMode = false;
   let isSuperAdmin = false;     // super_admin sees leads, all clients, assign + advisor mgmt
   let isProspectClient = false; // client-mode prospect: messaging-only until onboarded
+  let isClosingClient = false;  // client-mode: account scheduled for deletion
 
   // Cache for lead/client data
   let leadsCache = [];
@@ -2357,6 +2387,25 @@
 
       // A prospect client sees a messaging-only portal until onboarded.
       isProspectClient = !!(currentClient && (currentClient.status || 'prospect') === 'prospect');
+      // A closing client sees only a closure notice — no portal.
+      isClosingClient = !!(currentClient && currentClient.status === 'closing');
+
+      if (isClosingClient) {
+        const dueStr = currentClient.deletion_scheduled_at
+          ? new Date(currentClient.deletion_scheduled_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })
+          : 'soon';
+        document.body.innerHTML = `
+          <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#23262b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif;padding:24px;">
+            <div style="max-width:520px;background:#fbf6ec;border-radius:8px;padding:40px;text-align:center;">
+              <div style="font-family:Georgia,serif;font-size:13px;letter-spacing:5px;color:#c9a87c;margin-bottom:18px;">CURATOR</div>
+              <h1 style="font-family:Georgia,serif;font-size:26px;color:#0c3a4a;font-weight:500;margin:0 0 16px;">Your account is closing</h1>
+              <p style="font-size:15px;color:#2d2418;line-height:1.6;margin:0 0 18px;">This account is scheduled to be permanently closed on <strong>${dueStr}</strong>.</p>
+              <p style="font-size:13px;color:#6b5d4a;line-height:1.6;margin:0 0 24px;">If you'd like a copy of your documents or records before then, please contact us by that date and we'll arrange it.</p>
+              <button onclick="(async()=>{await sb.auth.signOut();location.reload();})()" style="background:#0c3a4a;color:#fbf6ec;border:none;padding:11px 22px;border-radius:3px;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;">Sign out</button>
+            </div>
+          </div>`;
+        return;
+      }
 
       const displayName = currentClient && currentClient.full_name
         ? currentClient.full_name.split(' ')[0]
@@ -2940,6 +2989,97 @@
     }
   };
 
+  // ─── Client lifecycle: deactivate / reactivate / schedule / cancel / wipe ───
+
+  // Simple status flip (direct Supabase; super_admin RLS allows it).
+  async function setClientStatus(clientId, newStatus) {
+    const { data, error } = await sb
+      .from('curator_clients')
+      .update({ status: newStatus })
+      .eq('id', clientId)
+      .select()
+      .single();
+    if (error) { alert('Could not update status: ' + error.message); return null; }
+    const idx = clientsCache.findIndex(c => c.id === clientId);
+    if (idx >= 0) clientsCache[idx] = data;
+    return data;
+  }
+
+  window.deactivateClient = async function (clientId) {
+    if (!confirm('Deactivate this client? They move to Dormant. This is reversible.')) return;
+    const updated = await setClientStatus(clientId, 'dormant');
+    if (updated) { renderClients(); if (typeof closeClientDrawer === 'function') closeClientDrawer(); }
+  };
+
+  window.reactivateClient = async function (clientId) {
+    const updated = await setClientStatus(clientId, 'active');
+    if (updated) { renderClients(); if (typeof closeClientDrawer === 'function') closeClientDrawer(); }
+  };
+
+  // Schedule deletion (15-day grace). Worker enforces dormant-first,
+  // sets the timer, emails the client, logs it.
+  window.scheduleDeletion = async function (clientId) {
+    if (!confirm('Schedule this client for deletion?\n\nThey will be notified by email and given 15 days to request their data. After 15 days their account and all data are permanently removed. You can cancel any time before then.')) return;
+    const msg = $('lifecycleMsg');
+    const { data: token } = await sb.auth.getSession();
+    const accessToken = token && token.session && token.session.access_token;
+    try {
+      const res = await fetch(CURATOR_ADMIN_URL + '/schedule-deletion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
+        body: JSON.stringify({ client_id: clientId })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) { if (msg) { msg.textContent = data.error || 'Failed.'; msg.className = 'form-msg error'; } return; }
+      if (typeof loadClients === 'function') await loadClients();
+      renderClients();
+      if (typeof closeClientDrawer === 'function') closeClientDrawer();
+    } catch (e) { if (msg) { msg.textContent = 'Network error.'; msg.className = 'form-msg error'; } }
+  };
+
+  window.cancelDeletion = async function (clientId) {
+    if (!confirm('Cancel the scheduled deletion? The client returns to Dormant.')) return;
+    const msg = $('lifecycleMsg');
+    const { data: token } = await sb.auth.getSession();
+    const accessToken = token && token.session && token.session.access_token;
+    try {
+      const res = await fetch(CURATOR_ADMIN_URL + '/cancel-deletion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
+        body: JSON.stringify({ client_id: clientId })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) { if (msg) { msg.textContent = data.error || 'Failed.'; msg.className = 'form-msg error'; } return; }
+      if (typeof loadClients === 'function') await loadClients();
+      renderClients();
+      if (typeof closeClientDrawer === 'function') closeClientDrawer();
+    } catch (e) { if (msg) { msg.textContent = 'Network error.'; msg.className = 'form-msg error'; } }
+  };
+
+  // Immediate permanent wipe — name-typed confirm, Worker re-checks the name.
+  window.wipeClientNow = async function (clientId, fullName) {
+    const expected = (fullName || '').trim();
+    const typed = prompt(`This permanently removes the client's login, documents, tasks, and messages. This cannot be undone.\n\nType the client's name to confirm:\n\n${expected}`);
+    if (typed === null) return;
+    if (typed.trim() !== expected) { alert('Name did not match. Wipe cancelled.'); return; }
+    const msg = $('lifecycleMsg');
+    const { data: token } = await sb.auth.getSession();
+    const accessToken = token && token.session && token.session.access_token;
+    try {
+      const res = await fetch(CURATOR_ADMIN_URL + '/wipe-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
+        body: JSON.stringify({ client_id: clientId, confirm_name: typed.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) { if (msg) { msg.textContent = data.error || 'Wipe failed.'; msg.className = 'form-msg error'; } return; }
+      // Remove from cache + UI
+      clientsCache = clientsCache.filter(c => c.id !== clientId);
+      renderClients();
+      if (typeof closeClientDrawer === 'function') closeClientDrawer();
+    } catch (e) { if (msg) { msg.textContent = 'Network error.'; msg.className = 'form-msg error'; } }
+  };
+
   // ─── Clients ───
   async function loadClients() {
     const container = $('clientsContainer');
@@ -3203,6 +3343,34 @@
         </label>
         <button class="btn-gold" id="startOnboardingBtn" onclick="startOnboarding('${client.id}')">Start onboarding</button>
         <span class="form-msg" id="onboardMsg"></span>
+      </div>
+      ` : ''}
+
+      ${(isSuperAdmin && (status === 'active' || status === 'prospect')) ? `
+      <div class="lifecycle-bar">
+        <div class="lifecycle-text">Deactivating moves this client to <strong>Dormant</strong> (reversible). You can schedule deletion only after deactivating.</div>
+        <button class="btn-ghost" onclick="deactivateClient('${client.id}')">Deactivate</button>
+      </div>
+      ` : ''}
+
+      ${(isSuperAdmin && status === 'dormant') ? `
+      <div class="lifecycle-bar warn">
+        <div class="lifecycle-text"><strong>Dormant.</strong> You can reactivate, or schedule deletion (a 15-day grace window during which their data is kept and they're notified).</div>
+        <button class="btn-ghost" onclick="reactivateClient('${client.id}')">Reactivate</button>
+        <button class="btn-danger" onclick="scheduleDeletion('${client.id}')">Schedule deletion</button>
+        <span class="form-msg" id="lifecycleMsg"></span>
+      </div>
+      ` : ''}
+
+      ${(isSuperAdmin && status === 'closing') ? `
+      <div class="lifecycle-bar danger">
+        <div class="lifecycle-text">
+          <strong>Scheduled for deletion.</strong> Permanent removal ${client.deletion_scheduled_at ? 'on <strong>' + fmtDate(client.deletion_scheduled_at) + '</strong>' : 'pending'}.
+          You can cancel (back to dormant) or wipe now. Wiping is permanent and removes their login, documents, tasks, and messages.
+        </div>
+        <button class="btn-ghost" onclick="cancelDeletion('${client.id}')">Cancel deletion</button>
+        <button class="btn-danger" onclick="wipeClientNow('${client.id}', ${JSON.stringify(client.full_name || '')})">Wipe now</button>
+        <span class="form-msg" id="lifecycleMsg"></span>
       </div>
       ` : ''}
 
