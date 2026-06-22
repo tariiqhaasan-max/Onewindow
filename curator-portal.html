@@ -213,6 +213,31 @@
   }
   .advisor-select:hover { border-color: var(--gold); }
   .advisor-select:disabled { opacity: 0.5; cursor: wait; }
+  .company-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: #faf6ee;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+  }
+  .company-bar-label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+  .company-bar-empty { font-size: 13px; color: var(--ink-soft); font-style: italic; }
+  .company-select {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    min-width: 180px;
+  }
+  .company-select:hover { border-color: var(--gold); }
   .inchat-badge {
     display: inline-block;
     font-size: 10px;
@@ -3397,6 +3422,7 @@
           <h4 class="drawer-section-title" style="margin:0;">Client workspace</h4>
           <button class="btn-primary" id="cdrawerAddToggle" onclick="cdrawerToggleAddBox()" type="button">+ Add task</button>
         </div>
+        <div class="company-bar" id="cdrawerCompanyBar"></div>
         <div class="filter-bar" style="margin-bottom: 14px;">
           <button class="filter-pill active" data-cdrawer-tab="tasks">Tasks</button>
           <button class="filter-pill" data-cdrawer-tab="docs">Documents</button>
@@ -4095,6 +4121,8 @@
 
   let cdrawerCurrentClient = null;
   let cdrawerTasksCache = [];
+  let cdrawerCompanies = [];          // companies for the open client
+  let cdrawerCurrentCompanyId = null; // selected company filter
   let cdrawerDocsCache = [];
   let cdrawerMessagesCache = [];
   let cdrawerMessageChannel = null;
@@ -4163,6 +4191,10 @@
   window.openClientDrawer = function (clientId) {
     cdrawerCurrentClient = clientsCache.find(c => c.id === clientId);
     _origOpenClientDrawer(clientId);
+    // Load this client's companies, then everything keys off the selected one.
+    loadCdrawerCompanies().then(() => {
+      loadCdrawerTasks();
+    });
     // Reset tab UI
     document.querySelectorAll('[data-cdrawer-tab]').forEach(p => p.classList.remove('active'));
     const firstTab = document.querySelector('[data-cdrawer-tab="tasks"]');
@@ -4180,7 +4212,7 @@
     window._cdrawerTaskFilter = 'all';
     document.querySelectorAll('[data-task-filter]').forEach(b =>
       b.classList.toggle('active', b.dataset.taskFilter === 'all'));
-    loadCdrawerTasks();
+    // (companies + tasks loaded above, after company list resolves)
     // Messages: collapsed by default, load content, then set unread (auto-opens if any)
     const msgBody = $('cdrawerMsgBody');
     if (msgBody) msgBody.style.display = 'none';
@@ -4195,13 +4227,86 @@
     }
   };
 
+  // ─── Companies (multi-company support) ───
+  async function loadCdrawerCompanies() {
+    cdrawerCompanies = [];
+    cdrawerCurrentCompanyId = null;
+    if (!cdrawerCurrentClient) return;
+    const { data, error } = await sb
+      .from('curator_companies')
+      .select('*')
+      .eq('client_id', cdrawerCurrentClient.id)
+      .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: true });
+    if (error) { console.error('loadCdrawerCompanies:', error); return; }
+    cdrawerCompanies = data || [];
+    // Default to the primary (or first) company.
+    cdrawerCurrentCompanyId = cdrawerCompanies.length ? cdrawerCompanies[0].id : null;
+    renderCdrawerCompanyBar();
+  }
+
+  function renderCdrawerCompanyBar() {
+    const bar = $('cdrawerCompanyBar');
+    if (!bar) return;
+    if (!cdrawerCompanies.length) {
+      bar.innerHTML = `
+        <span class="company-bar-label">Company</span>
+        <span class="company-bar-empty">No company yet</span>
+        <button class="btn-ghost btn-row" onclick="cdrawerAddCompany()">+ Add company</button>`;
+      return;
+    }
+    let opts = '';
+    cdrawerCompanies.forEach(co => {
+      const sel = co.id === cdrawerCurrentCompanyId ? ' selected' : '';
+      const label = co.name + (co.business_type ? ' · ' + co.business_type : '');
+      opts += `<option value="${co.id}"${sel}>${escapeHtml(label)}</option>`;
+    });
+    bar.innerHTML = `
+      <span class="company-bar-label">Company</span>
+      <select class="company-select" onchange="cdrawerSwitchCompany(this.value)">${opts}</select>
+      <button class="btn-ghost btn-row" onclick="cdrawerAddCompany()">+ Add company</button>`;
+  }
+
+  window.cdrawerSwitchCompany = function (companyId) {
+    cdrawerCurrentCompanyId = companyId;
+    loadCdrawerTasks();
+    // Refresh docs only if the docs tab is currently shown.
+    const docsPane = $('cdrawer-docs');
+    if (docsPane && docsPane.style.display !== 'none') loadCdrawerDocs();
+  };
+
+  window.cdrawerAddCompany = async function () {
+    if (!cdrawerCurrentClient) return;
+    const name = prompt('Company name:');
+    if (name === null) return;
+    const trimmed = name.trim();
+    if (!trimmed) { alert('Company name is required.'); return; }
+    const type = prompt('Business type (optional) — e.g. Private Limited (SECP), Sole proprietorship:') || null;
+    const { data, error } = await sb
+      .from('curator_companies')
+      .insert({
+        client_id: cdrawerCurrentClient.id,
+        name: trimmed,
+        business_type: type ? type.trim() : null,
+        is_primary: cdrawerCompanies.length === 0
+      })
+      .select()
+      .single();
+    if (error) { alert('Could not add company: ' + error.message); return; }
+    cdrawerCompanies.push(data);
+    cdrawerCurrentCompanyId = data.id;
+    renderCdrawerCompanyBar();
+    loadCdrawerTasks();
+  };
+
   async function loadCdrawerTasks() {
     if (!cdrawerCurrentClient) return;
     const list = $('cdrawerTasksList');
-    const { data, error } = await sb.from('curator_tasks')
+    let q = sb.from('curator_tasks')
       .select('*')
-      .eq('client_id', cdrawerCurrentClient.id)
-      .order('created_at', { ascending: true });
+      .eq('client_id', cdrawerCurrentClient.id);
+    if (cdrawerCurrentCompanyId) q = q.eq('company_id', cdrawerCurrentCompanyId);
+    const { data, error } = await q.order('created_at', { ascending: true });
     if (error) { list.innerHTML = `<div class="placeholder">${escapeHtml(error.message)}</div>`; return; }
     cdrawerTasksCache = data || [];
     renderCdrawerTasks();
@@ -4296,6 +4401,7 @@
     if (!title) { alert('Please give the task a title.'); return; }
     const { data, error } = await sb.from('curator_tasks').insert({
       client_id: cdrawerCurrentClient.id,
+      company_id: cdrawerCurrentCompanyId,
       title: title,
       description: desc || null,
       due_date: due || null,
@@ -4400,10 +4506,11 @@
   async function loadCdrawerDocs() {
     if (!cdrawerCurrentClient) return;
     const list = $('cdrawerDocsList');
-    const { data, error } = await sb.from('curator_files')
+    let q = sb.from('curator_files')
       .select('*')
-      .eq('client_id', cdrawerCurrentClient.id)
-      .order('created_at', { ascending: false });
+      .eq('client_id', cdrawerCurrentClient.id);
+    if (cdrawerCurrentCompanyId) q = q.eq('company_id', cdrawerCurrentCompanyId);
+    const { data, error } = await q.order('created_at', { ascending: false });
     if (error) { list.innerHTML = `<div class="placeholder">${escapeHtml(error.message)}</div>`; return; }
     cdrawerDocsCache = data || [];
     if (cdrawerDocsCache.length === 0) {
@@ -4549,6 +4656,7 @@
     if (!label) { alert('Describe what you need.'); return; }
     const { error } = await sb.from('curator_files').insert({
       client_id: cdrawerCurrentClient.id,
+      company_id: cdrawerCurrentCompanyId,
       category: category,
       filename: label,           // human label until fulfilled
       storage_path: null,
@@ -4579,11 +4687,13 @@
       progress.prepend(note);
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const yPart = year ? (year + '/') : '';
-      const path = `${cdrawerCurrentClient.id}/${category}/${yPart}${Date.now()}_${safeName}`;
+      const coPart = cdrawerCurrentCompanyId ? (cdrawerCurrentCompanyId + '/') : '';
+      const path = `${cdrawerCurrentClient.id}/${coPart}${category}/${yPart}${Date.now()}_${safeName}`;
       const { error: stErr } = await sb.storage.from('curator-files').upload(path, file, { upsert: false, contentType: file.type });
       if (stErr) { note.className = 'doc-progress error'; note.textContent = file.name + ': ' + stErr.message; continue; }
       const { error } = await sb.from('curator_files').insert({
         client_id: cdrawerCurrentClient.id,
+        company_id: cdrawerCurrentCompanyId,
         category: category,
         filename: file.name,
         storage_path: path,
@@ -4928,6 +5038,7 @@
 
     const { data, error } = await sb.from('curator_tasks').insert({
       client_id: cdrawerCurrentClient.id,
+      company_id: cdrawerCurrentCompanyId,
       title: item.title,
       description: item.description || null,
       category: item.category,
@@ -4990,6 +5101,7 @@
         }
         return {
           client_id: cdrawerCurrentClient.id,
+          company_id: cdrawerCurrentCompanyId,
           title: item.title,
           description: item.description || null,
           category: item.category,
