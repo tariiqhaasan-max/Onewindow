@@ -247,6 +247,21 @@
     padding: 1px 7px;
     margin-right: 6px;
   }
+  .ctask-progress { display: flex; gap: 5px; margin-top: 7px; flex-wrap: wrap; }
+  .ctask-prog-chip {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    color: var(--ink-soft);
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 2px 9px;
+    cursor: pointer;
+    line-height: 1.4;
+  }
+  .ctask-prog-chip:hover { border-color: var(--gold); }
+  .ctask-prog-chip.active { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+  .ctask-prog-chip.clear { color: #a3372a; border-color: #f0c9c1; padding: 2px 8px; }
   .inchat-badge {
     display: inline-block;
     font-size: 10px;
@@ -4280,6 +4295,8 @@
     bar.innerHTML = `
       <span class="company-bar-label">Company</span>
       <select class="company-select" onchange="cdrawerSwitchCompany(this.value)">${opts}</select>
+      <button class="btn-ghost btn-row" onclick="cdrawerEditCompany()">Edit</button>
+      <button class="btn-ghost btn-row" onclick="cdrawerDeleteCompany()">Delete</button>
       <button class="btn-ghost btn-row" onclick="cdrawerAddCompany()">+ Add company</button>`;
     populateFormCompanySelects();
   }
@@ -4333,6 +4350,53 @@
     cdrawerCurrentCompanyId = data.id;
     renderCdrawerCompanyBar();
     loadCdrawerTasks();
+  };
+
+  window.cdrawerEditCompany = async function () {
+    const co = cdrawerCompanies.find(c => c.id === cdrawerCurrentCompanyId);
+    if (!co) { alert('No company selected.'); return; }
+    const name = prompt('Company name:', co.name);
+    if (name === null) return;
+    const trimmed = name.trim();
+    if (!trimmed) { alert('Company name is required.'); return; }
+    const type = prompt('Business type (optional):', co.business_type || '');
+    if (type === null) return;
+    const { data, error } = await sb.from('curator_companies')
+      .update({ name: trimmed, business_type: type.trim() || null })
+      .eq('id', co.id).select().single();
+    if (error) { alert('Could not update company: ' + error.message); return; }
+    const idx = cdrawerCompanies.findIndex(c => c.id === co.id);
+    if (idx >= 0) cdrawerCompanies[idx] = data;
+    renderCdrawerCompanyBar();
+  };
+
+  window.cdrawerDeleteCompany = async function () {
+    const co = cdrawerCompanies.find(c => c.id === cdrawerCurrentCompanyId);
+    if (!co) { alert('No company selected.'); return; }
+    if (cdrawerCompanies.length <= 1) {
+      alert('This is the client\u2019s only company and can\u2019t be deleted. Add another company first if you need to replace it.');
+      return;
+    }
+    // Count what cascades (tasks + files for this company).
+    const [{ count: taskCount }, { count: fileCount }] = await Promise.all([
+      sb.from('curator_tasks').select('id', { count: 'exact', head: true }).eq('company_id', co.id),
+      sb.from('curator_files').select('id', { count: 'exact', head: true }).eq('company_id', co.id),
+    ]);
+    const t = taskCount || 0, f = fileCount || 0;
+    let warn = `Delete company "${co.name}"?`;
+    if (t || f) {
+      warn += `\n\nThis will also permanently delete ${t} task${t === 1 ? '' : 's'} and ${f} document${f === 1 ? '' : 's'} attached to this company. This cannot be undone.`;
+    }
+    if (!confirm(warn)) return;
+
+    const { error } = await sb.from('curator_companies').delete().eq('id', co.id);
+    if (error) { alert('Could not delete company: ' + error.message); return; }
+    cdrawerCompanies = cdrawerCompanies.filter(c => c.id !== co.id);
+    cdrawerCurrentCompanyId = cdrawerCompanies.length ? cdrawerCompanies[0].id : null;
+    renderCdrawerCompanyBar();
+    loadCdrawerTasks();
+    const docsPane = $('cdrawer-docs');
+    if (docsPane && docsPane.style.display !== 'none') loadCdrawerDocs();
   };
 
   async function loadCdrawerTasks() {
@@ -4414,12 +4478,23 @@
         dueBadge = periodBadge;
       }
 
+      const progressChips = isDone ? '' : (() => {
+        const cur = task.progress_pct;
+        const steps = [25, 50, 75, 95, 100];
+        const chips = steps.map(p =>
+          `<button class="ctask-prog-chip${cur === p ? ' active' : ''}" onclick="cdrawerSetProgress('${task.id}', ${p})">${p}%</button>`
+        ).join('');
+        const clear = cur != null ? `<button class="ctask-prog-chip clear" onclick="cdrawerSetProgress('${task.id}', null)" title="Clear">×</button>` : '';
+        return `<div class="ctask-progress">${chips}${clear}</div>`;
+      })();
+
       return `
         <div class="ctask-row ${isDone ? 'done' : ''}" data-task-id="${task.id}">
           <div class="task-checkbox ${isDone ? 'checked' : ''}" onclick="cdrawerToggleTask('${task.id}')"></div>
           <div class="ctask-main">
             <span class="ctask-title">${catBadge}${escapeHtml(task.title)}${recHint}${flag}</span>
             ${task.description ? `<span class="ctask-desc">${escapeHtml(task.description)}</span>` : ''}
+            ${progressChips}
           </div>
           ${dueBadge}
           <button class="ctask-del" onclick="cdrawerDeleteTask('${task.id}')" title="Delete">Delete</button>
@@ -4549,6 +4624,17 @@
     const { error } = await sb.from('curator_tasks').delete().eq('id', taskId);
     if (error) { alert('Delete failed: ' + error.message); return; }
     cdrawerTasksCache = cdrawerTasksCache.filter(t => t.id !== taskId);
+    renderCdrawerTasks();
+  };
+
+  // Set advisor progress % (independent of completion tick).
+  window.cdrawerSetProgress = async function (taskId, pct) {
+    const { data, error } = await sb.from('curator_tasks')
+      .update({ progress_pct: pct })
+      .eq('id', taskId).select().single();
+    if (error) { alert('Could not update progress: ' + error.message); return; }
+    const idx = cdrawerTasksCache.findIndex(t => t.id === taskId);
+    if (idx >= 0) cdrawerTasksCache[idx] = data;
     renderCdrawerTasks();
   };
 
