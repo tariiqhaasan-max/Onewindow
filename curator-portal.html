@@ -238,6 +238,15 @@
     min-width: 180px;
   }
   .company-select:hover { border-color: var(--gold); }
+  .ctask-period {
+    display: inline-block;
+    font-size: 11px;
+    color: var(--ink-soft);
+    background: #f4ede0;
+    border-radius: 3px;
+    padding: 1px 7px;
+    margin-right: 6px;
+  }
   .inchat-badge {
     display: inline-block;
     font-size: 10px;
@@ -3443,9 +3452,12 @@
                 <select class="field-input" id="cdrawerComplianceCatalog">
                   <option value="">Pick a compliance type…</option>
                 </select>
-                <input class="field-input" type="date" id="cdrawerComplianceDue" placeholder="Due date">
+                <select class="field-input" id="cdrawerComplianceCompany" title="Company"></select>
+                <input class="field-input" type="date" id="cdrawerComplianceStart" title="Start date">
+                <input class="field-input" type="date" id="cdrawerComplianceDue" title="End date">
                 <button class="btn-primary" onclick="cdrawerAddCompliance()" type="button">Add</button>
               </div>
+              <div class="compliance-quickadd-meta">Start and End are optional. End is the deadline.</div>
               <div class="compliance-quickadd-meta" id="cdrawerComplianceMeta">
                 Pick a compliance type to see its recurrence and reminder schedule.
               </div>
@@ -3456,8 +3468,12 @@
               <div style="margin-bottom: 8px;"><label class="field-label">Or add a one-off task</label></div>
               <input class="field-input" type="text" id="cdrawerNewTaskTitle" placeholder="Task title…" style="margin-bottom: 6px;">
               <input class="field-input" type="text" id="cdrawerNewTaskDesc" placeholder="Description (optional)…" style="margin-bottom: 6px;">
+              <select class="field-input" id="cdrawerNewTaskCompany" title="Company" style="margin-bottom: 6px;"></select>
               <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <input class="field-input" type="date" id="cdrawerNewTaskDue" style="flex:1; min-width:140px;">
+                <label class="field-label" style="margin:0;">Start</label>
+                <input class="field-input" type="date" id="cdrawerNewTaskStart" style="flex:1; min-width:120px;">
+                <label class="field-label" style="margin:0;">End</label>
+                <input class="field-input" type="date" id="cdrawerNewTaskDue" style="flex:1; min-width:120px;">
                 <button class="btn-primary" onclick="cdrawerCreateTask()">Add task</button>
               </div>
             </div>
@@ -4265,12 +4281,32 @@
       <span class="company-bar-label">Company</span>
       <select class="company-select" onchange="cdrawerSwitchCompany(this.value)">${opts}</select>
       <button class="btn-ghost btn-row" onclick="cdrawerAddCompany()">+ Add company</button>`;
+    populateFormCompanySelects();
+  }
+
+  // Fill the per-form company dropdowns; default each to the header selection.
+  function populateFormCompanySelects() {
+    ['cdrawerComplianceCompany', 'cdrawerNewTaskCompany'].forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      if (!cdrawerCompanies.length) {
+        el.innerHTML = `<option value="">No company</option>`;
+        return;
+      }
+      let o = '';
+      cdrawerCompanies.forEach(co => {
+        const sel = co.id === cdrawerCurrentCompanyId ? ' selected' : '';
+        const label = co.name + (co.business_type ? ' · ' + co.business_type : '');
+        o += `<option value="${co.id}"${sel}>${escapeHtml(label)}</option>`;
+      });
+      el.innerHTML = o;
+    });
   }
 
   window.cdrawerSwitchCompany = function (companyId) {
     cdrawerCurrentCompanyId = companyId;
+    populateFormCompanySelects();
     loadCdrawerTasks();
-    // Refresh docs only if the docs tab is currently shown.
     const docsPane = $('cdrawer-docs');
     if (docsPane && docsPane.style.display !== 'none') loadCdrawerDocs();
   };
@@ -4358,17 +4394,24 @@
       else if (task.client_action === 'self_handling') flag = `<span class="task-client-flag self-handling">Client self-handling</span>`;
 
       let dueBadge = '';
+      const periodBadge = task.start_date
+        ? `<span class="ctask-period">${fmtDate(task.start_date)} – ${task.due_date ? fmtDate(task.due_date) : '…'}</span>`
+        : '';
       if (isDone) {
         const byLabel = task.done_by === 'curator' ? 'Curator' : (task.done_by === 'client' ? 'Client' : '');
         const feeLabel = (task.done_by === 'curator' && task.fee_amount != null)
           ? ` · PKR ${Number(task.fee_amount).toLocaleString('en-PK')}` : '';
         const doneText = `Done${task.completed_at ? ' ' + fmtDate(task.completed_at) : ''}`;
-        dueBadge = `<span class="ctask-due done">${doneText}${byLabel ? ' · ' + byLabel : ''}${feeLabel}</span>`;
+        dueBadge = `${periodBadge}<span class="ctask-due done">${doneText}${byLabel ? ' · ' + byLabel : ''}${feeLabel}</span>`;
       } else if (task.due_date) {
         const b = dueBucket(task.due_date);
         const cls = b === 'overdue' ? 'overdue' : (b === 'due-soon' ? 'due-soon' : '');
-        const lbl = b === 'overdue' ? `Due ${fmtDate(task.due_date)} · Overdue` : `Due ${fmtDate(task.due_date)}`;
-        dueBadge = `<span class="ctask-due ${cls}">${escapeHtml(lbl)}</span>`;
+        // With a period, label the deadline "End"; otherwise keep "Due".
+        const word = task.start_date ? 'End' : 'Due';
+        const lbl = b === 'overdue' ? `${word} ${fmtDate(task.due_date)} · Overdue` : `${word} ${fmtDate(task.due_date)}`;
+        dueBadge = `${periodBadge}<span class="ctask-due ${cls}">${escapeHtml(lbl)}</span>`;
+      } else if (periodBadge) {
+        dueBadge = periodBadge;
       }
 
       return `
@@ -4397,21 +4440,27 @@
     if (!cdrawerCurrentClient) return;
     const title = $('cdrawerNewTaskTitle').value.trim();
     const desc = $('cdrawerNewTaskDesc').value.trim();
+    const start = $('cdrawerNewTaskStart').value;
     const due = $('cdrawerNewTaskDue').value;
+    const companyId = ($('cdrawerNewTaskCompany') && $('cdrawerNewTaskCompany').value) || cdrawerCurrentCompanyId;
     if (!title) { alert('Please give the task a title.'); return; }
+    if (start && due && start > due) { alert('Start date is after the end date.'); return; }
     const { data, error } = await sb.from('curator_tasks').insert({
       client_id: cdrawerCurrentClient.id,
-      company_id: cdrawerCurrentCompanyId,
+      company_id: companyId,
       title: title,
       description: desc || null,
+      start_date: start || null,
       due_date: due || null,
       status: 'open',
       created_by: currentUser.id
     }).select().single();
     if (error) { alert('Could not create task: ' + error.message); return; }
-    cdrawerTasksCache.push(data);
+    // Only show in the current list if it belongs to the viewed company.
+    if (companyId === cdrawerCurrentCompanyId) cdrawerTasksCache.push(data);
     $('cdrawerNewTaskTitle').value = '';
     $('cdrawerNewTaskDesc').value = '';
+    $('cdrawerNewTaskStart').value = '';
     $('cdrawerNewTaskDue').value = '';
     renderCdrawerTasks();
   };
@@ -5027,23 +5076,27 @@
   window.cdrawerAddCompliance = async function () {
     if (!cdrawerCurrentClient) return;
     const sel = $('cdrawerComplianceCatalog');
+    const startInput = $('cdrawerComplianceStart');
     const dueInput = $('cdrawerComplianceDue');
     const catalogId = sel.value;
+    const startDate = startInput ? startInput.value : '';
     const dueDate = dueInput.value;
+    const companyId = ($('cdrawerComplianceCompany') && $('cdrawerComplianceCompany').value) || cdrawerCurrentCompanyId;
     if (!catalogId) { alert('Pick a compliance type first.'); return; }
-    if (!dueDate)   { alert('Set a due date for this compliance item.'); return; }
+    if (startDate && dueDate && startDate > dueDate) { alert('Start date is after the end date.'); return; }
 
     const item = complianceCatalog.find(c => c.id === catalogId);
     if (!item) { alert('Could not find that compliance type. Try refreshing.'); return; }
 
     const { data, error } = await sb.from('curator_tasks').insert({
       client_id: cdrawerCurrentClient.id,
-      company_id: cdrawerCurrentCompanyId,
+      company_id: companyId,
       title: item.title,
       description: item.description || null,
       category: item.category,
       status: 'pending',
-      due_date: dueDate,
+      start_date: startDate || null,
+      due_date: dueDate || null,
       created_by: currentUser.id,
       is_compliance: true,
       recurrence: item.default_recurrence,
@@ -5053,8 +5106,9 @@
     }).select().single();
 
     if (error) { alert('Could not add compliance task: ' + error.message); return; }
-    cdrawerTasksCache.push(data);
+    if (companyId === cdrawerCurrentCompanyId) cdrawerTasksCache.push(data);
     sel.value = '';
+    if (startInput) startInput.value = '';
     dueInput.value = '';
     $('cdrawerComplianceMeta').textContent = 'Pick a compliance type to see its recurrence and reminder schedule.';
     renderCdrawerTasks();
