@@ -4679,6 +4679,10 @@
         if (isNaN(fee) || fee < 0) { alert('Enter a valid fee amount, or leave it blank.'); return; }
       }
     }
+    const taskBeingDone = cdrawerTasksCache.find(t => t.id === taskId);
+    if (taskBeingDone && (taskBeingDone.recurrence === 'monthly' || taskBeingDone.recurrence === 'annual') && taskBeingDone.progress_pct !== 100) {
+      if (!confirm('This is a recurring task but it isn\u2019t at 100%. Completing it now will NOT create the next occurrence. Set it to 100% first if you want the next one auto-created.\n\nMark done anyway?')) return;
+    }
     const { data, error } = await sb.from('curator_tasks').update({
       status: 'completed',
       completed_at: new Date().toISOString(),
@@ -4689,8 +4693,73 @@
     const idx = cdrawerTasksCache.findIndex(t => t.id === taskId);
     if (idx >= 0) cdrawerTasksCache[idx] = data;
     delete window._cdrawerPendingDoneBy[taskId];
+
+    // Auto-spawn the next occurrence for recurring tasks completed at 100%.
+    await cdrawerMaybeSpawnNext(data);
+
     renderCdrawerTasks();
   };
+
+  // Roll a yyyy-mm-dd date forward by one recurrence period.
+  function rollDate(dateStr, recurrence) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr + 'T00:00:00');
+    if (recurrence === 'monthly') {
+      const day = d.getDate();
+      d.setMonth(d.getMonth() + 1);
+      // Guard month-overflow (e.g. Jan 31 → Feb): clamp to last valid day.
+      if (d.getDate() < day) d.setDate(0);
+    } else if (recurrence === 'annual') {
+      d.setFullYear(d.getFullYear() + 1);
+    } else {
+      return null;
+    }
+    return d.toISOString().slice(0, 10);
+  }
+
+  // If the just-completed task is monthly/annual AND was at 100%,
+  // create the next occurrence with dates rolled forward. Guards against
+  // double-spawning by checking no child already exists for this task.
+  async function cdrawerMaybeSpawnNext(task) {
+    const rec = task.recurrence;
+    if (rec !== 'monthly' && rec !== 'annual') return;
+    if (task.progress_pct !== 100) return;
+
+    // Already spawned a child? Don't spawn again.
+    const { data: existing } = await sb.from('curator_tasks')
+      .select('id', { count: 'exact' })
+      .eq('parent_task_id', task.id)
+      .limit(1);
+    if (existing && existing.length > 0) return;
+
+    const nextStart = rollDate(task.start_date, rec);
+    const nextDue = rollDate(task.due_date, rec);
+    // Nothing to roll (no dates) → skip silently.
+    if (!nextStart && !nextDue) return;
+
+    const { data: child, error } = await sb.from('curator_tasks').insert({
+      client_id: task.client_id,
+      company_id: task.company_id,
+      title: task.title,
+      description: task.description,
+      category: task.category,
+      status: task.is_compliance ? 'pending' : 'open',
+      start_date: nextStart,
+      due_date: nextDue,
+      created_by: currentUser.id,
+      is_compliance: task.is_compliance,
+      recurrence: task.recurrence,
+      recurrence_anchor: task.recurrence_anchor,
+      notify_days_before: task.notify_days_before,
+      catalog_code: task.catalog_code,
+      parent_task_id: task.id,
+      progress_pct: null
+    }).select().single();
+
+    if (error) { console.error('spawn next occurrence failed:', error.message); return; }
+    // Show it in the list if it's for the company currently in view.
+    if (child.company_id === cdrawerCurrentCompanyId) cdrawerTasksCache.push(child);
+  }
   window.cdrawerDeleteTask = async function (taskId) {
     if (!confirm('Delete this task?')) return;
     const { error } = await sb.from('curator_tasks').delete().eq('id', taskId);
