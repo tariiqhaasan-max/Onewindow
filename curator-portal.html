@@ -262,6 +262,21 @@
   .ctask-prog-chip:hover { border-color: var(--gold); }
   .ctask-prog-chip.active { background: var(--navy); color: var(--cream); border-color: var(--navy); }
   .ctask-prog-chip.clear { color: #a3372a; border-color: #f0c9c1; padding: 2px 8px; }
+  .newtype-overlay {
+    position: fixed; inset: 0; background: rgba(35,38,43,0.55);
+    display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+  }
+  .newtype-overlay.visible { display: flex; }
+  .newtype-modal {
+    background: var(--paper, #fff); border-radius: 10px; padding: 26px;
+    width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .newtype-title { font-family: var(--font-serif, Georgia, serif); font-size: 22px; color: var(--navy, #0c3a4a); margin: 0 0 4px; }
+  .newtype-sub { font-size: 12px; color: var(--ink-soft); margin: 0 0 18px; line-height: 1.5; }
+  .newtype-modal .field-label { display:block; margin: 12px 0 4px; }
+  .newtype-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .newtype-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
   .inchat-badge {
     display: inline-block;
     font-size: 10px;
@@ -2115,6 +2130,57 @@
 
 <!-- ═══════ Client detail drawer (advisor only) ═══════ -->
 <div class="drawer-overlay" id="clientDrawerOverlay" onclick="closeClientDrawer()"></div>
+
+<!-- New compliance type modal (super_admin) -->
+<div class="newtype-overlay" id="newTypeOverlay" onclick="cdrawerCloseNewType(event)">
+  <div class="newtype-modal" onclick="event.stopPropagation()">
+    <h3 class="newtype-title">New compliance type</h3>
+    <p class="newtype-sub">Adds to the shared catalog — it will appear for all clients of the matching company type.</p>
+    <label class="field-label">Title</label>
+    <input class="field-input" id="ntTitle" type="text" placeholder="e.g. Quarterly Withholding Statement">
+    <label class="field-label">Description (optional)</label>
+    <input class="field-input" id="ntDesc" type="text" placeholder="Short note shown under the task">
+    <div class="newtype-grid">
+      <div>
+        <label class="field-label">Category</label>
+        <select class="field-input" id="ntCategory">
+          <option value="secp">SECP</option>
+          <option value="fbr">FBR</option>
+          <option value="accounting">Accounting</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Applies to</label>
+        <select class="field-input" id="ntApplies">
+          <option value="private_ltd">Private Ltd</option>
+          <option value="section_42">Section 42 / NGO</option>
+          <option value="individual">Individual / Sole / AOP</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Recurrence</label>
+        <select class="field-input" id="ntRecurrence" onchange="cdrawerNewTypeRecChange()">
+          <option value="none">One-off</option>
+          <option value="monthly">Monthly</option>
+          <option value="annual">Annual</option>
+        </select>
+      </div>
+      <div id="ntAnchorWrap" style="display:none;">
+        <label class="field-label">Day of month</label>
+        <input class="field-input" id="ntAnchor" type="number" min="1" max="31" placeholder="e.g. 15">
+      </div>
+    </div>
+    <label class="field-label">Reminder days before (comma-separated)</label>
+    <input class="field-input" id="ntNotify" type="text" placeholder="e.g. 14, 7, 1">
+    <div class="newtype-actions">
+      <button class="btn-ghost" onclick="cdrawerCloseNewType()">Cancel</button>
+      <button class="btn-primary" id="ntSaveBtn" onclick="cdrawerSaveNewType()">Add type</button>
+    </div>
+    <span class="form-msg" id="ntMsg"></span>
+  </div>
+</div>
+
 <aside class="drawer" id="clientDrawer">
   <div class="drawer-head">
     <button class="drawer-close" onclick="closeClientDrawer()" title="Back to clients" style="width:auto;padding:0 14px;border-radius:18px;">← Clients</button>
@@ -3461,7 +3527,10 @@
             <div class="compliance-quickadd">
               <div class="compliance-quickadd-head">
                 <p class="compliance-quickadd-title">Add a compliance deadline</p>
-                <button class="compliance-quickadd-link" onclick="cdrawerApplyStandardSet()" type="button">Apply standard set</button>
+                <span>
+                  <button class="compliance-quickadd-link" id="cdrawerNewTypeBtn" onclick="cdrawerOpenNewType()" type="button" style="display:none;">+ New type</button>
+                  <button class="compliance-quickadd-link" onclick="cdrawerApplyStandardSet()" type="button">Apply standard set</button>
+                </span>
               </div>
               <div class="compliance-quickadd-row">
                 <select class="field-input" id="cdrawerComplianceCatalog">
@@ -4226,6 +4295,9 @@
     loadCdrawerCompanies().then(() => {
       loadCdrawerTasks();
     });
+    // Show the "+ New type" catalog button only for super admins.
+    const _ntBtn = $('cdrawerNewTypeBtn');
+    if (_ntBtn) _ntBtn.style.display = isSuperAdmin ? '' : 'none';
     // Reset tab UI
     document.querySelectorAll('[data-cdrawer-tab]').forEach(p => p.classList.remove('active'));
     const firstTab = document.querySelector('[data-cdrawer-tab="tasks"]');
@@ -5198,6 +5270,68 @@
     dueInput.value = '';
     $('cdrawerComplianceMeta').textContent = 'Pick a compliance type to see its recurrence and reminder schedule.';
     renderCdrawerTasks();
+  };
+
+  // ─── New compliance type (super_admin → global catalog) ───
+  window.cdrawerOpenNewType = function () {
+    if (!isSuperAdmin) { alert('Only a super admin can add compliance types.'); return; }
+    $('ntTitle').value = '';
+    $('ntDesc').value = '';
+    $('ntCategory').value = 'secp';
+    $('ntApplies').value = (cdrawerCurrentClient && /section 42|ngo/i.test(cdrawerCurrentClient.business_type || '')) ? 'section_42'
+      : (cdrawerCurrentClient && /sole|individual|aop/i.test(cdrawerCurrentClient.business_type || '')) ? 'individual'
+      : 'private_ltd';
+    $('ntRecurrence').value = 'none';
+    $('ntAnchor').value = '';
+    $('ntAnchorWrap').style.display = 'none';
+    $('ntNotify').value = '';
+    $('ntMsg').textContent = '';
+    $('newTypeOverlay').classList.add('visible');
+  };
+  window.cdrawerCloseNewType = function (e) {
+    if (e && e.target && e.target.id !== 'newTypeOverlay' && e.type === 'click') { /* backdrop only */ }
+    $('newTypeOverlay').classList.remove('visible');
+  };
+  window.cdrawerNewTypeRecChange = function () {
+    $('ntAnchorWrap').style.display = ($('ntRecurrence').value === 'monthly') ? '' : 'none';
+  };
+  window.cdrawerSaveNewType = async function () {
+    if (!isSuperAdmin) { alert('Only a super admin can add compliance types.'); return; }
+    const title = $('ntTitle').value.trim();
+    const desc = $('ntDesc').value.trim();
+    const category = $('ntCategory').value;
+    const applies = $('ntApplies').value;
+    const rec = $('ntRecurrence').value;
+    const anchor = rec === 'monthly' ? (parseInt($('ntAnchor').value, 10) || null) : null;
+    const notify = $('ntNotify').value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+    const msg = $('ntMsg');
+    if (!title) { msg.textContent = 'Title is required.'; msg.className = 'form-msg error'; return; }
+
+    // Build a stable code from the title (catalog_code is used on tasks).
+    const code = 'custom_' + title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40) + '_' + Date.now().toString().slice(-5);
+    const btn = $('ntSaveBtn'); btn.disabled = true; btn.textContent = 'Adding…';
+
+    const { data, error } = await sb.from('curator_compliance_catalog').insert({
+      code,
+      category,
+      title,
+      description: desc || null,
+      applies_to: applies,
+      default_recurrence: rec,
+      default_recurrence_anchor: anchor,
+      default_notify_days_before: notify.length ? notify : null,
+      is_event_based: rec === 'none',
+      is_active: true,
+      sort_order: 999
+    }).select().single();
+
+    btn.disabled = false; btn.textContent = 'Add type';
+    if (error) { msg.textContent = error.message; msg.className = 'form-msg error'; return; }
+
+    // Add to cache + refresh the dropdown so it's immediately usable.
+    complianceCatalog.push(data);
+    if (typeof cdrawerPopulateComplianceCatalog === 'function') cdrawerPopulateComplianceCatalog();
+    cdrawerCloseNewType();
   };
 
   window.cdrawerApplyStandardSet = async function () {
