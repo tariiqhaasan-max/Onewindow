@@ -262,6 +262,29 @@
   .ctask-prog-chip:hover { border-color: var(--gold); }
   .ctask-prog-chip.active { background: var(--navy); color: var(--cream); border-color: var(--navy); }
   .ctask-prog-chip.clear { color: #a3372a; border-color: #f0c9c1; padding: 2px 8px; }
+  .docsub-tabs { display: flex; gap: 6px; margin: 4px 0 14px; }
+  .docsub-tab {
+    font-family: var(--font-sans); font-size: 12px; color: var(--ink-soft);
+    background: #fff; border: 1px solid var(--line); border-radius: 16px;
+    padding: 5px 14px; cursor: pointer;
+  }
+  .docsub-tab:hover { border-color: var(--gold); }
+  .docsub-tab.active { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+  .ctask-doc-chip {
+    display: inline-block; margin-top: 7px;
+    font-family: var(--font-sans); font-size: 11px; color: var(--navy);
+    background: #f4ede0; border: 1px solid #e6dcc8; border-radius: 12px;
+    padding: 2px 10px; cursor: pointer;
+  }
+  .ctask-doc-chip:hover { border-color: var(--gold); }
+  .ctask-doc-chip.open { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+  .ctask-docs { margin-top: 8px; border-left: 2px solid #e6dcc8; padding-left: 10px; }
+  .ctask-doc-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 5px 0; font-size: 12px;
+  }
+  .ctask-doc-name { flex: 1; color: var(--ink); }
+  .ctask-doc-who { color: var(--ink-soft); font-size: 11px; }
   .newtype-overlay {
     position: fixed; inset: 0; background: rgba(35,38,43,0.55);
     display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
@@ -3592,6 +3615,11 @@
             <button class="btn-secondary" onclick="cdrawerOpenDocAction('upload')" type="button">Upload a file</button>
           </div>
           <div id="cdrawerDocActionBox" class="cdoc-action-box" style="display:none;"></div>
+          <div class="docsub-tabs" id="cdrawerDocSubTabs">
+            <button class="docsub-tab active" data-docsub="client" onclick="cdrawerSetDocSubtab('client')">From client</button>
+            <button class="docsub-tab" data-docsub="us" onclick="cdrawerSetDocSubtab('us')">From us</button>
+            <button class="docsub-tab" data-docsub="requested" onclick="cdrawerSetDocSubtab('requested')">Requested</button>
+          </div>
           <div id="cdrawerDocsList"></div>
         </div>
       </div>
@@ -4236,6 +4264,7 @@
   let cdrawerCompanies = [];          // companies for the open client
   let cdrawerCurrentCompanyId = null; // selected company filter
   let cdrawerDocsCache = [];
+  let cdrawerDocSubtab = 'client';
   let cdrawerMessagesCache = [];
   let cdrawerMessageChannel = null;
 
@@ -4493,6 +4522,14 @@
     const { data, error } = await q.order('created_at', { ascending: true });
     if (error) { list.innerHTML = `<div class="placeholder">${escapeHtml(error.message)}</div>`; return; }
     cdrawerTasksCache = data || [];
+    // Also load the docs cache so task rows can show linked documents,
+    // even when the user is on the Tasks tab (not the Docs tab).
+    try {
+      let dq = sb.from('curator_files').select('*').eq('client_id', cdrawerCurrentClient.id);
+      if (cdrawerCurrentCompanyId) dq = dq.eq('company_id', cdrawerCurrentCompanyId);
+      const { data: docs } = await dq.order('created_at', { ascending: false });
+      cdrawerDocsCache = docs || [];
+    } catch (e) { /* non-fatal: tasks still render without doc links */ }
     renderCdrawerTasks();
   }
   function renderCdrawerTasks() {
@@ -4572,6 +4609,28 @@
         return `<div class="ctask-progress">${chips}${clear}</div>`;
       })();
 
+      const linkedDocs = (cdrawerDocsCache || []).filter(d => d.task_id === task.id);
+      const docsChip = linkedDocs.length
+        ? `<button class="ctask-doc-chip" onclick="cdrawerToggleTaskDocs('${task.id}', this)">📎 ${linkedDocs.length} doc${linkedDocs.length === 1 ? '' : 's'}</button>`
+        : '';
+      const docsRegion = linkedDocs.length
+        ? `<div class="ctask-docs" id="ctaskDocs-${task.id}" style="display:none;">` +
+            linkedDocs.map(d => {
+              const who = d.uploader_role === 'advisor' ? 'Curator' : 'Client';
+              const isReq = d.status === 'requested';
+              const right = isReq
+                ? `<span class="doc-pending-badge">Pending</span>`
+                : `<button class="doc-action" onclick="cdrawerDownloadDoc('${(d.storage_path||'').replace(/'/g, "\\'")}')">Download</button>`;
+              const nm = isReq ? (d.requested_label || d.filename) : d.filename;
+              return `<div class="ctask-doc-item">
+                  <span class="ctask-doc-name">${isReq ? '📋 ' : ''}${escapeHtml(nm)}</span>
+                  <span class="ctask-doc-who">${who}</span>
+                  ${right}
+                </div>`;
+            }).join('') +
+          `</div>`
+        : '';
+
       return `
         <div class="ctask-row ${isDone ? 'done' : ''}" data-task-id="${task.id}">
           <div class="task-checkbox ${isDone ? 'checked' : ''}" onclick="cdrawerToggleTask('${task.id}')"></div>
@@ -4579,6 +4638,8 @@
             <span class="ctask-title">${catBadge}${escapeHtml(task.title)}${recHint}${flag}</span>
             ${task.description ? `<span class="ctask-desc">${escapeHtml(task.description)}</span>` : ''}
             ${progressChips}
+            ${docsChip}
+            ${docsRegion}
           </div>
           ${dueBadge}
           <button class="ctask-del" onclick="cdrawerDeleteTask('${task.id}')" title="Delete">Delete</button>
@@ -4780,6 +4841,14 @@
     renderCdrawerTasks();
   };
 
+  window.cdrawerToggleTaskDocs = function (taskId, btn) {
+    const region = $('ctaskDocs-' + taskId);
+    if (!region) return;
+    const showing = region.style.display !== 'none';
+    region.style.display = showing ? 'none' : '';
+    if (btn) btn.classList.toggle('open', !showing);
+  };
+
   // Set advisor progress % (independent of completion tick).
   window.cdrawerSetProgress = async function (taskId, pct) {
     const { data, error } = await sb.from('curator_tasks')
@@ -4789,6 +4858,14 @@
     const idx = cdrawerTasksCache.findIndex(t => t.id === taskId);
     if (idx >= 0) cdrawerTasksCache[idx] = data;
     renderCdrawerTasks();
+  };
+
+  window.cdrawerSetDocSubtab = function (sub) {
+    cdrawerDocSubtab = sub;
+    document.querySelectorAll('#cdrawerDocSubTabs .docsub-tab').forEach(b => {
+      b.classList.toggle('active', b.dataset.docsub === sub);
+    });
+    loadCdrawerDocs();
   };
 
   async function loadCdrawerDocs() {
@@ -4801,8 +4878,25 @@
     const { data, error } = await q.order('created_at', { ascending: false });
     if (error) { list.innerHTML = `<div class="placeholder">${escapeHtml(error.message)}</div>`; return; }
     cdrawerDocsCache = data || [];
-    if (cdrawerDocsCache.length === 0) {
-      list.innerHTML = `<div class="placeholder" style="padding:18px;"><h4 class="placeholder-title">No documents yet.</h4>Request one or upload a file above.</div>`;
+
+    // Split by sub-tab: requested (pending), from client, from us (advisor).
+    const sub = cdrawerDocSubtab || 'client';
+    const visible = cdrawerDocsCache.filter(doc => {
+      if (sub === 'requested') return doc.status === 'requested';
+      if (doc.status === 'requested') return false; // pending only lives in Requested
+      if (sub === 'client') return doc.uploader_role !== 'advisor';
+      if (sub === 'us') return doc.uploader_role === 'advisor';
+      return true;
+    });
+
+    const emptyMsg = {
+      client: 'No documents from the client yet.',
+      us: 'No documents uploaded by your team yet.',
+      requested: 'No pending document requests.'
+    }[sub];
+
+    if (visible.length === 0) {
+      list.innerHTML = `<div class="placeholder" style="padding:18px;"><h4 class="placeholder-title">${emptyMsg}</h4></div>`;
       return;
     }
 
@@ -4811,7 +4905,7 @@
 
     // Group: category → year → docs
     const tree = {};
-    cdrawerDocsCache.forEach(doc => {
+    visible.forEach(doc => {
       const cat = doc.category || 'other';
       const yr = doc.year_label || 'No year';
       tree[cat] = tree[cat] || {};
