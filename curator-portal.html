@@ -1625,6 +1625,18 @@
     font-size: 11px;
     margin-top: 3px;
   }
+  .doc-item-link {
+    color: var(--navy);
+    font-size: 11px;
+    margin-top: 3px;
+    font-weight: 500;
+  }
+  .doc-item-note {
+    color: var(--ink-soft);
+    font-size: 11px;
+    margin-top: 2px;
+    font-style: italic;
+  }
   .doc-item-size {
     color: var(--ink-faint);
     font-size: 12px;
@@ -4811,12 +4823,16 @@
       const isRequest = doc.status === 'requested';
       const isReceipt = doc.kind === 'receipt';
       const who = doc.uploader_role === 'advisor' ? 'Curator' : 'Client';
+      const linkedTask = doc.task_id ? cdrawerTasksCache.find(t => t.id === doc.task_id) : null;
+      const taskLine = linkedTask ? `<div class="doc-item-link">↳ for: ${escapeHtml(linkedTask.title)}</div>` : '';
+      const noteLine = doc.notes ? `<div class="doc-item-note">${escapeHtml(doc.notes)}</div>` : '';
       if (isRequest) {
         return `
           <div class="doc-item doc-request">
             <div style="flex:1;">
               <div class="doc-item-name">📋 ${escapeHtml(doc.requested_label || doc.filename)}</div>
               <div class="doc-item-meta">Requested ${timeAgo(doc.created_at)} · awaiting client upload</div>
+              ${taskLine}${noteLine}
             </div>
             <span class="doc-pending-badge">Pending</span>
             <div class="doc-item-actions">
@@ -4829,6 +4845,7 @@
           <div style="flex:1;">
             <div class="doc-item-name">${isReceipt ? '🧾 ' : ''}${escapeHtml(doc.filename)}</div>
             <div class="doc-item-meta">${who} · ${fmtFileSize(doc.file_size)} · ${timeAgo(doc.created_at)}</div>
+            ${taskLine}${noteLine}
           </div>
           <div class="doc-item-actions">
             <button class="doc-action" onclick="cdrawerDownloadDoc('${(doc.storage_path||'').replace(/'/g, "\\'")}')">Download</button>
@@ -4891,18 +4908,21 @@
         <div class="cdoc-action-title">Request a document from the client</div>
         <input class="field-input" id="cdocReqLabel" placeholder="What do you need? e.g. CNIC copy, bank statement" style="margin-bottom:8px;">
         <div class="cdoc-action-row">
-          <select class="field-input" id="cdocReqCategory">${cdocCategoryOptions('secp')}</select>
+          <select class="field-input" id="cdocReqCategory" onchange="cdrawerFillDocTasks('req')">${cdocCategoryOptions('secp')}</select>
           <select class="field-input" id="cdocReqYear">${cdocYearOptions()}</select>
         </div>
+        <select class="field-input" id="cdocReqTask" style="margin-bottom:8px;"></select>
+        <input class="field-input" id="cdocReqNote" maxlength="200" placeholder="Short note (optional)" style="margin-bottom:8px;">
         <div class="cdoc-action-buttons">
           <button class="btn-primary" onclick="cdrawerSubmitDocRequest()" type="button">Send request</button>
           <button class="btn-secondary" onclick="cdrawerCloseDocAction()" type="button">Cancel</button>
         </div>`;
+      cdrawerFillDocTasks('req');
     } else {
       box.innerHTML = `
         <div class="cdoc-action-title">Upload a file</div>
         <div class="cdoc-action-row">
-          <select class="field-input" id="cdocUpCategory">${cdocCategoryOptions('secp')}</select>
+          <select class="field-input" id="cdocUpCategory" onchange="cdrawerFillDocTasks('up')">${cdocCategoryOptions('secp')}</select>
           <select class="field-input" id="cdocUpYear">${cdocYearOptions()}</select>
           <select class="field-input" id="cdocUpKind">
             <option value="deliverable">Deliverable</option>
@@ -4910,14 +4930,36 @@
             <option value="client_doc">Other document</option>
           </select>
         </div>
+        <select class="field-input" id="cdocUpTask" style="margin-bottom:8px;"></select>
+        <input class="field-input" id="cdocUpNote" maxlength="200" placeholder="Short note (optional)" style="margin-bottom:8px;">
         <input class="field-input" type="file" id="cdocUpFile" multiple style="margin-bottom:8px;">
         <div class="cdoc-action-buttons">
           <button class="btn-primary" onclick="cdrawerSubmitDocUpload()" type="button">Upload</button>
           <button class="btn-secondary" onclick="cdrawerCloseDocAction()" type="button">Cancel</button>
         </div>
         <div id="cdocUpProgress"></div>`;
+      cdrawerFillDocTasks('up');
     }
     box.style.display = '';
+  };
+
+  // Populate the task dropdown with this company's tasks in the chosen
+  // category. Optional — first option is "Not linked to a task".
+  window.cdrawerFillDocTasks = function (which) {
+    const catEl = $(which === 'req' ? 'cdocReqCategory' : 'cdocUpCategory');
+    const taskEl = $(which === 'req' ? 'cdocReqTask' : 'cdocUpTask');
+    if (!catEl || !taskEl) return;
+    const cat = (catEl.value || '').toLowerCase();
+    const matches = cdrawerTasksCache.filter(t =>
+      (t.company_id === cdrawerCurrentCompanyId) &&
+      ((t.category || '').toLowerCase() === cat)
+    );
+    let opts = `<option value="">Not linked to a task</option>`;
+    matches.forEach(t => {
+      const when = t.due_date ? ' · ' + fmtDate(t.due_date) : '';
+      opts += `<option value="${t.id}">${escapeHtml(t.title)}${when}</option>`;
+    });
+    taskEl.innerHTML = opts;
   };
   window.cdrawerCloseDocAction = function () {
     const box = $('cdrawerDocActionBox');
@@ -4933,6 +4975,8 @@
     const { error } = await sb.from('curator_files').insert({
       client_id: cdrawerCurrentClient.id,
       company_id: cdrawerCurrentCompanyId,
+      task_id: ($('cdocReqTask') && $('cdocReqTask').value) || null,
+      notes: ($('cdocReqNote') && $('cdocReqNote').value.trim()) || null,
       category: category,
       filename: label,           // human label until fulfilled
       storage_path: null,
@@ -4955,6 +4999,8 @@
     const kind = $('cdocUpKind').value;
     const files = $('cdocUpFile').files;
     if (!files || files.length === 0) { alert('Pick at least one file.'); return; }
+    const upTaskId = ($('cdocUpTask') && $('cdocUpTask').value) || null;
+    const upNote = ($('cdocUpNote') && $('cdocUpNote').value.trim()) || null;
     const progress = $('cdocUpProgress');
     for (const file of files) {
       const note = document.createElement('div');
@@ -4970,6 +5016,8 @@
       const { error } = await sb.from('curator_files').insert({
         client_id: cdrawerCurrentClient.id,
         company_id: cdrawerCurrentCompanyId,
+        task_id: upTaskId,
+        notes: upNote,
         category: category,
         filename: file.name,
         storage_path: path,
