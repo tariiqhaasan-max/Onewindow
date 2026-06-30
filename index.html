@@ -57,6 +57,53 @@
     --ow-line:         #e8dec4;
   }
 
+  /* ─── Sign-in picker ─── */
+  .ow-signin-link {
+    font-size: 14px;
+    color: var(--ow-ink-soft);
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+  }
+  .ow-signin-link:hover { color: var(--ow-navy); border-bottom: 1px solid var(--ow-navy); }
+
+  .ow-picker {
+    display: none;
+    position: absolute;
+    top: 56px;
+    right: 0;
+    background: var(--ow-paper);
+    border: 1px solid var(--ow-line);
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(45, 36, 24, 0.12);
+    padding: 16px;
+    width: 280px;
+    z-index: 200;
+  }
+  .ow-picker.is-open { display: block; }
+  .ow-picker-title {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--ow-ink-faint);
+    margin: 0 0 10px 4px;
+  }
+  .ow-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .ow-picker-row:hover { background: var(--ow-cream); }
+  .ow-picker-icon {
+    width: 30px; height: 30px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 13px; flex-shrink: 0;
+  }
+  .ow-picker-label { font-size: 14px; font-weight: 600; color: var(--ow-ink); }
+  .ow-picker-sub { font-size: 11px; color: var(--ow-ink-faint); }
+
   a { color: inherit; text-decoration: none; }
   h1, h2, h3, h4 { margin: 0; font-family: 'Crimson Pro', Georgia, serif; font-weight: 600; line-height: 1.1; letter-spacing: -0.5px; }
   p { margin: 0; }
@@ -1402,6 +1449,32 @@
       <a href="#why" class="nav-link">Why OneWindow</a>
       <a href="#voices" class="nav-link">Voices</a>
       <a href="#contact" class="nav-link">Contact</a>
+      <div style="position: relative;">
+        <span class="ow-signin-link" id="ow-signin-toggle">Sign in</span>
+        <div class="ow-picker" id="ow-picker">
+          <div class="ow-picker-title">Sign in to</div>
+          <a class="ow-picker-row" href="https://onewindow.info/curator.html">
+            <div class="ow-picker-icon" style="background: var(--ow-navy); color: var(--ow-gold);">C</div>
+            <div><div class="ow-picker-label">Curator</div><div class="ow-picker-sub">Client advisory portal</div></div>
+          </a>
+          <a class="ow-picker-row" href="https://pulse.nimbyconsultants.com">
+            <div class="ow-picker-icon" style="background: #3b6ea5;">P</div>
+            <div><div class="ow-picker-label">Pulse</div><div class="ow-picker-sub">Financial dashboard</div></div>
+          </a>
+          <a class="ow-picker-row" href="https://hr.northnextventures.com">
+            <div class="ow-picker-icon" style="background: #4f7a52;">H</div>
+            <div><div class="ow-picker-label">NorthNext HR</div><div class="ow-picker-sub">Attendance & roster</div></div>
+          </a>
+          <a class="ow-picker-row" href="https://bejaantechsol.com">
+            <div class="ow-picker-icon" style="background: var(--ow-rose);">B</div>
+            <div><div class="ow-picker-label">Bejaan Hotel</div><div class="ow-picker-sub">Property operations</div></div>
+          </a>
+          <a class="ow-picker-row" href="https://accnimby.com">
+            <div class="ow-picker-icon" style="background: #7c6a9c;">N</div>
+            <div><div class="ow-picker-label">NIMBY Accounting</div><div class="ow-picker-sub">Bookkeeping & accounts</div></div>
+          </a>
+        </div>
+      </div>
       <a href="#whats-free" class="ow-cta">Get started free</a>
     </nav>
   </div>
@@ -2112,5 +2185,17 @@
   })();
 </script>
 
+<script>
+  document.getElementById('ow-signin-toggle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('ow-picker').classList.toggle('is-open');
+  });
+  document.addEventListener('click', (e) => {
+    const picker = document.getElementById('ow-picker');
+    if (picker.classList.contains('is-open') && !picker.contains(e.target)) {
+      picker.classList.remove('is-open');
+    }
+  });
+</script>
 </body>
 </html>
