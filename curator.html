@@ -443,6 +443,39 @@
     color: var(--gold);
     text-decoration: underline;
   }
+  /* ─── Shared OneWindow sign-in picker ─── */
+  .ow-signin-link { font-size: 14px; color: var(--ink-soft); cursor: pointer; border-bottom: 1px solid transparent; }
+  .ow-signin-link:hover { color: var(--navy); border-bottom: 1px solid var(--navy); }
+  .ow-picker {
+    display: none; position: absolute; top: calc(100% + 12px); right: 0;
+    background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(45, 36, 24, 0.12); padding: 16px; width: 280px; z-index: 200;
+  }
+  .ow-picker.is-open { display: block; }
+  .ow-picker-title { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 10px 4px; }
+  .ow-picker-row { display: flex; align-items: center; gap: 12px; padding: 9px 8px; border-radius: 8px; cursor: pointer; }
+  .ow-picker-row:hover { background: var(--cream); }
+  .ow-picker-icon { width: 30px; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .ow-picker-label { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .ow-picker-sub { font-size: 11px; color: var(--ink-faint); }
+
+  /* ─── Shared OneWindow suite footer ─── */
+  .ow-logo { display: flex; align-items: center; gap: 10px; }
+  .ow-logo-mark { width: 32px; height: 32px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, var(--gold), var(--navy)); }
+  .ow-logo-text { font-family: 'Crimson Pro', Georgia, serif; font-weight: 700; letter-spacing: 3px; color: var(--navy); font-size: 17px; }
+  .ow-footer { background: var(--cream); padding: 60px 24px 30px; border-top: 1px solid var(--line); }
+  .ow-footer .ow-footer-inner { max-width: 1120px; margin: 0 auto; }
+  .ow-footer .top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  .ow-footer .brand-block { max-width: 320px; }
+  .ow-footer .brand-block .blurb { font-size: 13px; color: var(--ink-soft); line-height: 1.6; margin-top: 12px; }
+  .ow-footer .col-title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--rose); font-weight: 700; margin-bottom: 14px; }
+  .ow-footer ul { list-style: none; padding: 0; margin: 0; }
+  .ow-footer ul li { margin-bottom: 8px; }
+  .ow-footer ul a { font-size: 13px; color: var(--ink-soft); }
+  .ow-footer ul a:hover { color: var(--navy); }
+  .ow-footer .bottom { padding-top: 22px; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--ink-faint); }
+  @media (max-width: 900px) { .ow-footer .top { grid-template-columns: 1fr 1fr; gap: 28px; } }
+  @media (max-width: 540px) { .ow-footer .top { grid-template-columns: 1fr; } .ow-footer .bottom { flex-direction: column; gap: 8px; text-align: center; } }
 </style>
 </head>
 <body>
@@ -457,7 +490,28 @@
       <a class="nav-link" href="#included">What's included</a>
       <a class="nav-link" href="#how">How it works</a>
       <a class="nav-link" href="#faq">FAQ</a>
-      <a class="nav-cta" href="/curator-portal.html">Sign in →</a>
+      <div style="position: relative;">
+        <span class="ow-signin-link" id="ow-signin-toggle">Sign in</span>
+        <div class="ow-picker" id="ow-picker">
+          <div class="ow-picker-title">Sign in to</div>
+          <a class="ow-picker-row" href="/curator-portal.html">
+            <div class="ow-picker-icon" style="background: var(--navy); color: var(--gold);">C</div>
+            <div><div class="ow-picker-label">Curator</div><div class="ow-picker-sub">Client advisory portal</div></div>
+          </a>
+          <a class="ow-picker-row" href="https://pulse.nimbyconsultants.com">
+            <div class="ow-picker-icon" style="background: #3b6ea5;">P</div>
+            <div><div class="ow-picker-label">Pulse</div><div class="ow-picker-sub">Financial dashboard</div></div>
+          </a>
+          <a class="ow-picker-row" href="https://hr.northnextventures.com">
+            <div class="ow-picker-icon" style="background: #4f7a52;">H</div>
+            <div><div class="ow-picker-label">NorthNext HR</div><div class="ow-picker-sub">Attendance &amp; roster</div></div>
+          </a>
+          <a class="ow-picker-row" href="https://accnimby.com">
+            <div class="ow-picker-icon" style="background: #7c6a9c;">N</div>
+            <div><div class="ow-picker-label">NIMBY Accounting</div><div class="ow-picker-sub">Bookkeeping &amp; accounts</div></div>
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 </nav>
@@ -623,11 +677,46 @@
 </section>
 
 <!-- ═══════════════════ FOOTER ═══════════════════ -->
-<footer class="footer">
-  <div class="footer-brand">CURATOR</div>
-  <div>A service from <a href="https://onewindow.info">NorthNext Ventures</a></div>
-  <div class="footer-line"></div>
-  <div class="footer-note">© NorthNext Ventures. Curator is available to Pakistani businesses only.</div>
+<footer class="ow-footer">
+  <div class="ow-footer-inner">
+    <div class="top">
+      <div class="brand-block">
+        <div class="ow-logo">
+          <div class="ow-logo-mark"></div>
+          <div class="ow-logo-text">ONEWINDOW</div>
+        </div>
+        <p class="blurb">Curator is part of OneWindow — the unified portal for NorthNext Ventures products. Built in Islamabad, used everywhere.</p>
+      </div>
+      <div>
+        <div class="col-title">Products</div>
+        <ul>
+          <li><a href="https://onewindow.info/curator.html">Curator</a></li>
+          <li><a href="https://accnimby.com" target="_blank" rel="noopener">NIMBY Accounting</a></li>
+          <li><a href="https://pulse.nimbyconsultants.com" target="_blank" rel="noopener">Pulse Analytics</a></li>
+          <li><a href="https://hr.northnextventures.com" target="_blank" rel="noopener">NorthNext HR</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="col-title">Company</div>
+        <ul>
+          <li><a href="https://onewindow.info">OneWindow home</a></li>
+          <li><a href="https://onewindow.info/#whats-free">What's free</a></li>
+          <li><a href="https://onewindow.info/#contact">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="col-title">Get in touch</div>
+        <ul>
+          <li><a href="mailto:hello@northnextventures.com">hello@northnextventures.com</a></li>
+          <li><a href="https://wa.me/923070767777" target="_blank" rel="noopener">WhatsApp us</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="bottom">
+      <div>© <span id="year">2026</span> NorthNext Ventures. Curator is available to Pakistani businesses only.</div>
+      <div>onewindow.info</div>
+    </div>
+  </div>
 </footer>
 
 <script>
@@ -635,6 +724,22 @@
   document.querySelectorAll('.faq-item').forEach(item => {
     item.addEventListener('click', () => item.classList.toggle('open'));
   });
+
+  // Shared sign-in picker (same behaviour as OneWindow)
+  document.getElementById('ow-signin-toggle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('ow-picker').classList.toggle('is-open');
+  });
+  document.addEventListener('click', (e) => {
+    const picker = document.getElementById('ow-picker');
+    if (picker.classList.contains('is-open') && !picker.contains(e.target)) {
+      picker.classList.remove('is-open');
+    }
+  });
+
+  // Footer year
+  const yr = document.getElementById('year');
+  if (yr) yr.textContent = new Date().getFullYear();
 </script>
 
 </body>
