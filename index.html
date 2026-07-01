@@ -312,10 +312,29 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 12px 0;
+    padding: 12px 10px;
+    margin: 0 -10px;
     border-top: 1px solid var(--ow-line);
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
   }
-  .ow-offer-tile:first-of-type { border-top: none; padding-top: 4px; }
+  .ow-offer-tile:first-of-type { border-top: none; padding-top: 6px; }
+  .ow-offer-tile:hover { background: var(--ow-cream); transform: translateX(2px); }
+  .ow-offer-tile:hover .ow-offer-name { color: var(--ow-navy); }
+  .ow-offer-tile:hover .ow-offer-ico { border-color: var(--ow-gold); }
+  .ow-offer-tile:hover .ow-offer-arrow { opacity: 1; transform: translateX(0); }
+  .ow-offer-arrow {
+    flex-shrink: 0;
+    color: var(--ow-ink-faint);
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    margin-left: -6px;
+  }
+  .ow-offer-arrow svg { width: 15px; height: 15px; display: block; }
   .ow-offer-ico {
     flex-shrink: 0;
     width: 38px; height: 38px;
@@ -324,10 +343,11 @@
     background: var(--ow-cream);
     border: 1px solid var(--ow-gold-soft);
     color: var(--ow-navy);
+    transition: border-color 0.15s ease;
   }
   .ow-offer-ico svg { width: 19px; height: 19px; }
   .ow-offer-body { flex: 1; min-width: 0; }
-  .ow-offer-name { font-size: 14.5px; font-weight: 700; color: var(--ow-ink); }
+  .ow-offer-name { font-size: 14.5px; font-weight: 700; color: var(--ow-ink); transition: color 0.15s ease; }
   .ow-offer-desc { font-size: 12px; color: var(--ow-ink-soft); line-height: 1.4; margin-top: 1px; }
   .ow-offer-badge {
     flex-shrink: 0;
@@ -1663,50 +1683,55 @@
       <div class="ow-hero-offers-head">Everything to get started, <em>free.</em></div>
       <div class="ow-hero-offers-sub">No card required · Pakistan</div>
 
-      <div class="ow-offer-tile">
+      <a class="ow-offer-tile" href="/curator-portal.html">
         <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5M9 10h.01M15 10h.01M12 10h.01"/></svg></div>
         <div class="ow-offer-body">
           <div class="ow-offer-name">Company incorporation</div>
           <div class="ow-offer-desc">Full SECP registration — no service fee</div>
         </div>
         <span class="ow-offer-badge is-free">Free</span>
-      </div>
+        <span class="ow-offer-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+      </a>
 
-      <div class="ow-offer-tile">
+      <a class="ow-offer-tile" href="/curator-portal.html">
         <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></div>
         <div class="ow-offer-body">
           <div class="ow-offer-name">FBR compliance</div>
           <div class="ow-offer-desc">NTN · sales tax · IRIS · first return filed</div>
         </div>
         <span class="ow-offer-badge is-free">Free</span>
-      </div>
+        <span class="ow-offer-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+      </a>
 
-      <div class="ow-offer-tile">
+      <a class="ow-offer-tile" href="/curator-portal.html">
         <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
         <div class="ow-offer-body">
           <div class="ow-offer-name">CPA setup advisory</div>
           <div class="ow-offer-desc">One-hour call with a chartered accountant</div>
         </div>
         <span class="ow-offer-badge is-free">Free</span>
-      </div>
+        <span class="ow-offer-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+      </a>
 
-      <div class="ow-offer-tile">
+      <a class="ow-offer-tile" href="https://accnimby.com" target="_blank" rel="noopener">
         <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg></div>
         <div class="ow-offer-body">
           <div class="ow-offer-name">Cloud accounting</div>
           <div class="ow-offer-desc">NIMBY — multi-company, unlimited entries</div>
         </div>
         <span class="ow-offer-badge is-days">90 days</span>
-      </div>
+        <span class="ow-offer-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+      </a>
 
-      <div class="ow-offer-tile">
+      <a class="ow-offer-tile" href="https://hr.northnextventures.com" target="_blank" rel="noopener">
         <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <div class="ow-offer-body">
           <div class="ow-offer-name">HR &amp; attendance</div>
           <div class="ow-offer-desc">NorthNext HR — your whole team</div>
         </div>
         <span class="ow-offer-badge is-days">90 days</span>
-      </div>
+        <span class="ow-offer-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+      </a>
 
       <div class="ow-hero-offers-foot">
         <a href="#whats-free">See the full breakdown →</a>
