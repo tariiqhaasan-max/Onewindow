@@ -1084,6 +1084,21 @@
     font-style: italic;
     line-height: 1.5;
   }
+  .ow-free-card .fc-cta {
+    margin-top: auto;
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--ow-gold);
+    color: var(--ow-navy);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 16px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .ow-free-card .fc-cta:hover { background: #d6b894; }
   .ow-free-fine-print {
     margin-top: 30px;
     text-align: center;
@@ -1936,19 +1951,17 @@
 
     <div class="ow-free-grid">
 
-      <!-- Card 1: Full Curator setup service — free forever -->
+      <!-- Card 1: Curator business setup — teaser only; the full story lives on the Curator page -->
       <div class="ow-free-card">
         <div class="fc-price">Free</div>
         <div class="fc-period">Always · Pakistan only</div>
         <h3>Full business setup</h3>
-        <p class="fc-pitch">The complete Curator package — incorporate your company, get FBR-ready, and sit down with a chartered accountant to set things up properly.</p>
+        <p class="fc-pitch">Our Curator service incorporates your company, gets you FBR-ready, and pairs you with a chartered accountant — no service fee, yours to keep.</p>
         <ul class="fc-list">
-          <li>SECP company registration — no service fee</li>
-          <li>FBR compliance: NTN, sales tax, IRIS account</li>
-          <li>One-hour advisory call with a CPA</li>
-          <li>Compliances included for the first three months</li>
+          <li>SECP registration + FBR (NTN, sales tax, IRIS)</li>
+          <li>A CPA advisory call, plus your first 3 months of compliance</li>
         </ul>
-        <div class="fc-after">No catch. Even if you never become a paying customer, the setup is yours to keep.</div>
+        <a href="/curator.html" class="fc-cta">See the full Curator service →</a>
       </div>
 
       <!-- Card 2: NIMBY accounting — 3 months free -->
