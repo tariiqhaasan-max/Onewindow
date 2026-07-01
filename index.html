@@ -274,6 +274,89 @@
     font-style: italic;
   }
 
+  /* ─── Hero two-column layout: headline (left) + always-on free offers (right) ─── */
+  .ow-hero-layout {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 56px;
+    align-items: center;
+  }
+  /* In the two-column layout the headline shares the row, so cap its size
+     a touch so it never crowds the offers panel. */
+  .ow-hero-layout .ow-hero-slide h1 { font-size: clamp(34px, 4.6vw, 58px); }
+  .ow-hero-layout .ow-hero-slide .sub { margin-bottom: 26px; }
+
+  .ow-hero-offers {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid var(--ow-gold-soft);
+    border-radius: 18px;
+    padding: 26px 26px 20px;
+    box-shadow: 0 24px 60px -30px rgba(12, 58, 74, 0.35);
+    backdrop-filter: blur(2px);
+  }
+  .ow-hero-offers-head {
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size: 21px;
+    line-height: 1.2;
+    color: var(--ow-ink);
+    margin-bottom: 4px;
+  }
+  .ow-hero-offers-head em { font-style: italic; color: var(--ow-navy); font-weight: 600; }
+  .ow-hero-offers-sub {
+    font-size: 12.5px;
+    color: var(--ow-ink-faint);
+    margin-bottom: 18px;
+    letter-spacing: 0.2px;
+  }
+  .ow-offer-tile {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--ow-line);
+  }
+  .ow-offer-tile:first-of-type { border-top: none; padding-top: 4px; }
+  .ow-offer-ico {
+    flex-shrink: 0;
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: var(--ow-cream);
+    border: 1px solid var(--ow-gold-soft);
+    color: var(--ow-navy);
+  }
+  .ow-offer-ico svg { width: 19px; height: 19px; }
+  .ow-offer-body { flex: 1; min-width: 0; }
+  .ow-offer-name { font-size: 14.5px; font-weight: 700; color: var(--ow-ink); }
+  .ow-offer-desc { font-size: 12px; color: var(--ow-ink-soft); line-height: 1.4; margin-top: 1px; }
+  .ow-offer-badge {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .ow-offer-badge.is-free { background: var(--ow-navy); color: var(--ow-cream-2); }
+  .ow-offer-badge.is-days { background: var(--ow-gold-soft); color: var(--ow-navy); }
+  .ow-hero-offers-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 16px; padding-top: 14px;
+    border-top: 1px solid var(--ow-line);
+  }
+  .ow-hero-offers-foot a {
+    font-size: 13px; font-weight: 700; color: var(--ow-navy);
+    border-bottom: 1.5px solid var(--ow-navy); padding-bottom: 1px;
+  }
+  .ow-hero-offers-foot .note { font-size: 11px; color: var(--ow-ink-faint); font-style: italic; }
+
+  @media (max-width: 900px) {
+    .ow-hero-layout { grid-template-columns: 1fr; gap: 40px; }
+    .ow-hero-rotator { min-height: auto; }
+  }
+
   /* ─── Trust strip ─── */
   .ow-trust {
     padding: 36px 0;
@@ -1479,6 +1562,7 @@
 <!-- ═══════════════════════ HERO (ROTATING) ═══════════════════════ -->
 <section class="ow-hero" id="top">
   <div class="container">
+    <div class="ow-hero-layout">
     <div class="ow-hero-rotator" id="hero-rotator">
       <div class="ow-hero-viewport" id="hero-viewport">
 
@@ -1572,6 +1656,65 @@
       </div>
       <div class="ow-hero-dots" id="hero-dots"></div>
     </div>
+
+    <!-- Always-on free-offer panel: the concrete value, visible the instant
+         you land — no waiting for the headline to rotate through it. -->
+    <aside class="ow-hero-offers">
+      <div class="ow-hero-offers-head">Everything to get started, <em>free.</em></div>
+      <div class="ow-hero-offers-sub">No card required · Pakistan</div>
+
+      <div class="ow-offer-tile">
+        <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5M9 10h.01M15 10h.01M12 10h.01"/></svg></div>
+        <div class="ow-offer-body">
+          <div class="ow-offer-name">Company incorporation</div>
+          <div class="ow-offer-desc">Full SECP registration — no service fee</div>
+        </div>
+        <span class="ow-offer-badge is-free">Free</span>
+      </div>
+
+      <div class="ow-offer-tile">
+        <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></div>
+        <div class="ow-offer-body">
+          <div class="ow-offer-name">FBR compliance</div>
+          <div class="ow-offer-desc">NTN · sales tax · IRIS · first return filed</div>
+        </div>
+        <span class="ow-offer-badge is-free">Free</span>
+      </div>
+
+      <div class="ow-offer-tile">
+        <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="ow-offer-body">
+          <div class="ow-offer-name">CPA setup advisory</div>
+          <div class="ow-offer-desc">One-hour call with a chartered accountant</div>
+        </div>
+        <span class="ow-offer-badge is-free">Free</span>
+      </div>
+
+      <div class="ow-offer-tile">
+        <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg></div>
+        <div class="ow-offer-body">
+          <div class="ow-offer-name">Cloud accounting</div>
+          <div class="ow-offer-desc">NIMBY — multi-company, unlimited entries</div>
+        </div>
+        <span class="ow-offer-badge is-days">90 days</span>
+      </div>
+
+      <div class="ow-offer-tile">
+        <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="ow-offer-body">
+          <div class="ow-offer-name">HR &amp; attendance</div>
+          <div class="ow-offer-desc">NorthNext HR — your whole team</div>
+        </div>
+        <span class="ow-offer-badge is-days">90 days</span>
+      </div>
+
+      <div class="ow-hero-offers-foot">
+        <a href="#whats-free">See the full breakdown →</a>
+        <span class="note">Pay only when you're running</span>
+      </div>
+    </aside>
+
+    </div><!-- /ow-hero-layout -->
   </div>
 </section>
 
