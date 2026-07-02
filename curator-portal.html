@@ -318,6 +318,21 @@
   }
   .client-q-item.answered { opacity: 0.85; }
   .client-q-tick { color: #2d7a43; font-weight: 700; }
+  .client-doc-chip {
+    display: inline-block; margin-top: 10px;
+    font-family: var(--font-sans); font-size: 12px; color: var(--navy);
+    background: #f4ede0; border: 1px solid #e6dcc8; border-radius: 14px;
+    padding: 3px 12px; cursor: pointer;
+  }
+  .client-doc-chip:hover { border-color: var(--gold); }
+  .client-doc-chip.open { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+  .client-task-docs { margin-top: 8px; border-left: 2px solid #e6dcc8; padding-left: 10px; }
+  .client-task-doc-item {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 6px 0; font-size: 13px;
+  }
+  .client-task-doc-name { flex: 1; color: var(--ink); min-width: 140px; }
+  .client-task-doc-who { color: var(--ink-soft); font-size: 11px; }
   .ctq-add { display: flex; gap: 6px; margin-top: 8px; }
   .ctq-add-input { flex: 1; font-size: 12px; }
   /* Client-side questions */
@@ -3769,6 +3784,14 @@
         .order('sort_order', { ascending: true });
       clientQuestionsCache = qs || [];
     } catch (e) { clientQuestionsCache = []; }
+    // Also ensure the docs cache is populated so task rows can show linked docs
+    // even when the client is on the Tasks view (not the Documents view).
+    try {
+      const { data: docs } = await sb.from('curator_files')
+        .select('*').eq('client_id', currentClient.id)
+        .order('created_at', { ascending: false });
+      clientDocsCache = docs || [];
+    } catch (e) { /* non-fatal */ }
     renderClientTasks();
     updateClientStats();
   }
@@ -3854,6 +3877,27 @@
           `</div>`;
       }
 
+      // Linked documents on this task (both directions), expandable like the advisor view.
+      const taskDocs = (clientDocsCache || []).filter(d => d.task_id === task.id && d.status !== 'requested');
+      let docsBlock = '';
+      if (taskDocs.length) {
+        docsBlock = `
+          <button class="client-doc-chip" onclick="clientToggleTaskDocs('${task.id}', this)">📎 ${taskDocs.length} doc${taskDocs.length === 1 ? '' : 's'}</button>
+          <div class="client-task-docs" id="clientTaskDocs-${task.id}" style="display:none;">` +
+          taskDocs.map(d => {
+            const who = d.uploader_role === 'advisor' ? 'From your advisor' : 'You sent';
+            const sp = (d.storage_path || '').replace(/'/g, "\\'");
+            const fn = (d.filename || '').replace(/'/g, "\\'");
+            return `<div class="client-task-doc-item">
+                <span class="client-task-doc-name">${escapeHtml(d.filename)}</span>
+                <span class="client-task-doc-who">${who}</span>
+                <button class="doc-action" onclick="docView('${sp}')">View</button>
+                <button class="doc-action" onclick="docDownload('${sp}','${fn}')">Download</button>
+              </div>`;
+          }).join('') +
+          `</div>`;
+      }
+
       html += `
         <div class="task-item ${isDone ? 'done' : ''}">
           <div class="task-checkbox ${isDone ? 'checked' : ''}" onclick="toggleClientTask('${task.id}')"></div>
@@ -3862,6 +3906,7 @@
             ${task.description ? `<div class="task-desc">${escapeHtml(task.description)}</div>` : ''}
             ${dueBadge}
             ${actionBlock}
+            ${docsBlock}
             ${questionsBlock}
           </div>
           <div></div>
@@ -5550,6 +5595,14 @@
   // Note: the inline renderClientTasks function defined earlier in the IIFE
   // has been replaced in place to handle compliance metadata, filtering,
   // category badges, and client-action buttons. No override needed here.
+
+  window.clientToggleTaskDocs = function (taskId, btn) {
+    const region = $('clientTaskDocs-' + taskId);
+    if (!region) return;
+    const showing = region.style.display !== 'none';
+    region.style.display = showing ? 'none' : '';
+    if (btn) btn.classList.toggle('open', !showing);
+  };
 
   window.clientSaveAnswer = async function (qId) {
     const input = $('cq-' + qId);
