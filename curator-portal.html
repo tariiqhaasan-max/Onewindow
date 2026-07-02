@@ -301,6 +301,23 @@
   .ctq-del { border: none; background: none; color: #a3372a; font-size: 16px; line-height: 1; cursor: pointer; padding: 0 4px; }
   .ctq-answer { font-size: 12px; color: #2d5a3d; margin-top: 3px; }
   .ctq-answer.empty { color: var(--ink-faint); font-style: italic; }
+  .ctq-check {
+    width: 15px; height: 15px; border: 1.5px solid var(--line); border-radius: 4px;
+    cursor: pointer; flex-shrink: 0; display: inline-block; position: relative;
+  }
+  .ctq-check:hover { border-color: var(--gold); }
+  .ctq-check.on { background: var(--navy); border-color: var(--navy); }
+  .ctq-check.on::after { content: '✓'; color: var(--cream); font-size: 11px; position: absolute; top: -1px; left: 2px; }
+  .ctq-item.handled .ctq-qtext { color: var(--ink-faint); text-decoration: line-through; }
+  .ctq-tick { color: #2d7a43; font-size: 13px; font-weight: 700; }
+  .ctq-reuse { margin-bottom: 8px; }
+  .ctq-reuse-inner {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: #eef4f1; border: 1px solid #cfe0d8; border-radius: 6px;
+    padding: 8px 12px; font-size: 12px; color: var(--navy);
+  }
+  .client-q-item.answered { opacity: 0.85; }
+  .client-q-tick { color: #2d7a43; font-weight: 700; }
   .ctq-add { display: flex; gap: 6px; margin-top: 8px; }
   .ctq-add-input { flex: 1; font-size: 12px; }
   /* Client-side questions */
@@ -3823,15 +3840,17 @@
       if (myQuestions.length) {
         questionsBlock = `<div class="client-q-block">
           <div class="client-q-head">Your advisor needs a few details:</div>` +
-          myQuestions.map(q => `
-            <div class="client-q-item">
-              <label class="client-q-label">${escapeHtml(q.question)}</label>
+          myQuestions.map(q => {
+            const isAnswered = q.answer && q.answer.trim();
+            return `
+            <div class="client-q-item ${isAnswered ? 'answered' : ''}">
+              <label class="client-q-label">${isAnswered ? '<span class="client-q-tick">✓</span> ' : ''}${escapeHtml(q.question)}</label>
               <div class="client-q-answer-row">
                 <input class="field-input client-q-input" id="cq-${q.id}" value="${q.answer ? escapeHtml(q.answer) : ''}" placeholder="Your answer…">
                 <button class="nb-act-btn primary" onclick="clientSaveAnswer('${q.id}')">Save</button>
               </div>
-              ${q.answer && q.answer.trim() ? `<span class="client-q-saved" id="cqSaved-${q.id}">✓ Saved</span>` : ''}
-            </div>`).join('') +
+            </div>`;
+          }).join('') +
           `</div>`;
       }
 
@@ -4749,13 +4768,20 @@
         : `❔ Add questions`;
       const qChip = `<button class="ctask-q-chip" onclick="cdrawerToggleTaskQ('${task.id}', this)">${qChipLabel}</button>`;
       const qRegion = `<div class="ctask-questions" id="ctaskQ-${task.id}" style="display:none;">` +
+        (taskQuestions.length === 0
+          ? `<div class="ctq-reuse" id="ctqReuse-${task.id}" data-title="${escapeHtml(task.title)}"></div>`
+          : '') +
         taskQuestions.map(q => {
-          const ans = q.answer && q.answer.trim()
+          const answered = q.answer && q.answer.trim();
+          const ans = answered
             ? `<div class="ctq-answer">${escapeHtml(q.answer)}</div>`
             : `<div class="ctq-answer empty">No answer yet</div>`;
-          return `<div class="ctq-item">
+          const tick = answered ? `<span class="ctq-tick" title="Client answered">✓</span>` : '';
+          return `<div class="ctq-item ${q.handled ? 'handled' : ''}">
               <div class="ctq-qrow">
+                <span class="ctq-check ${q.handled ? 'on' : ''}" onclick="cdrawerToggleQHandled('${q.id}','${task.id}')" title="Mark handled"></span>
                 <span class="ctq-qtext">${escapeHtml(q.question)}</span>
+                ${tick}
                 <button class="ctq-del" onclick="cdrawerDeleteQuestion('${q.id}','${task.id}')" title="Remove question">×</button>
               </div>
               ${ans}
@@ -4994,6 +5020,74 @@
     const showing = region.style.display !== 'none';
     region.style.display = showing ? 'none' : '';
     if (btn) btn.classList.toggle('open', !showing);
+    // On open, if empty, look for reusable questions from other clients.
+    if (!showing) cdrawerCheckReuse(taskId);
+  };
+
+  // Look for questions asked on ANOTHER client's task with the same title,
+  // and offer to copy them in. Distinct question texts only.
+  async function cdrawerCheckReuse(taskId) {
+    const holder = $('ctqReuse-' + taskId);
+    if (!holder) return; // only present when this task has no questions yet
+    const title = holder.getAttribute('data-title');
+    if (!title) return;
+    holder.innerHTML = '';
+    try {
+      // Find tasks with the same title belonging to OTHER clients.
+      const { data: sameTitleTasks } = await sb.from('curator_tasks')
+        .select('id, client_id, title')
+        .eq('title', title)
+        .neq('client_id', cdrawerCurrentClient.id)
+        .limit(50);
+      if (!sameTitleTasks || !sameTitleTasks.length) return;
+      const otherTaskIds = sameTitleTasks.map(t => t.id);
+      const { data: priorQs } = await sb.from('curator_task_questions')
+        .select('question, task_id, created_at')
+        .in('task_id', otherTaskIds)
+        .order('created_at', { ascending: false });
+      if (!priorQs || !priorQs.length) return;
+      // Dedupe by question text, keep most recent order.
+      const seen = new Set(); const unique = [];
+      priorQs.forEach(q => { const k = q.question.trim().toLowerCase(); if (!seen.has(k)) { seen.add(k); unique.push(q.question); } });
+      if (!unique.length) return;
+      window._cdrawerReuseCache = window._cdrawerReuseCache || {};
+      window._cdrawerReuseCache[taskId] = unique;
+      holder.innerHTML = `
+        <div class="ctq-reuse-inner">
+          <span>You've asked ${unique.length} question${unique.length===1?'':'s'} on a previous "${escapeHtml(title)}". Reuse them?</span>
+          <button class="btn-ghost btn-row" onclick="cdrawerReuseQuestions('${taskId}')">Reuse questions</button>
+        </div>`;
+    } catch (e) { /* silent: reuse is a convenience, never blocks */ }
+  }
+
+  window.cdrawerReuseQuestions = async function (taskId) {
+    const list = (window._cdrawerReuseCache || {})[taskId] || [];
+    if (!list.length) return;
+    const existing = cdrawerQuestionsCache.filter(x => x.task_id === taskId).length;
+    const rows = list.map((question, i) => ({
+      task_id: taskId,
+      client_id: cdrawerCurrentClient.id,
+      question,
+      sort_order: existing + i,
+      created_by: currentUser.id
+    }));
+    const { data, error } = await sb.from('curator_task_questions').insert(rows).select();
+    if (error) { alert('Could not reuse questions: ' + error.message); return; }
+    (data || []).forEach(r => cdrawerQuestionsCache.push(r));
+    renderCdrawerTasks();
+    setTimeout(() => { const r = $('ctaskQ-' + taskId); if (r) r.style.display = ''; }, 0);
+  };
+
+  window.cdrawerToggleQHandled = async function (qId, taskId) {
+    const q = cdrawerQuestionsCache.find(x => x.id === qId);
+    if (!q) return;
+    const { data, error } = await sb.from('curator_task_questions')
+      .update({ handled: !q.handled }).eq('id', qId).select().single();
+    if (error) { alert('Could not update: ' + error.message); return; }
+    const idx = cdrawerQuestionsCache.findIndex(x => x.id === qId);
+    if (idx >= 0) cdrawerQuestionsCache[idx] = data;
+    renderCdrawerTasks();
+    setTimeout(() => { const r = $('ctaskQ-' + taskId); if (r) r.style.display = ''; }, 0);
   };
 
   window.cdrawerAddQuestion = async function (taskId) {
