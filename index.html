@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>OneWindow — The unified portal for NIMBY products</title>
-<meta name="description" content="Accounting, analytics, HR, and operations tools in one place. Built by NIMBY." />
+<title>OneWindow · The unified portal for NorthNext Ventures products</title>
+<meta name="description" content="Accounting, analytics, HR, and operations tools in one place. Built by NorthNext Ventures." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400..700;1,400..700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
   /* ─────────────────────────────────────────────────────────────────
      OneWindow landing page
      ─────────────────────────────────────────────────────────────────
      Style: Mix A from the direction catalog ("Warm Trust").
      - Cream paper background (#f7f1e6)
-     - Serif headlines (Crimson Pro), sans body (Inter)
+     - Serif headlines (Spectral), sans body (Inter)
      - Oxblood and deep teal accents
      - Sunset glow at top-right of hero
      - White cards with gold top stripe + soft shadows
@@ -43,18 +43,18 @@
   }
 
   :root {
-    --ow-cream:        #f7f1e6;
-    --ow-cream-2:      #fbf6ec;
+    --ow-cream:        #f5f3ee;
+    --ow-cream-2:      #faf8f3;
     --ow-paper:        #ffffff;
-    --ow-ink:          #2d2418;
-    --ow-ink-soft:     #6b5d4a;
-    --ow-ink-faint:    #9a8d77;
-    --ow-navy:         #0c3a4a;
-    --ow-navy-soft:    #1a5468;
-    --ow-gold:         #c9a87c;
-    --ow-gold-soft:    #e8dec4;
-    --ow-rose:         #ab4232;
-    --ow-line:         #e8dec4;
+    --ow-ink:          #232a33;
+    --ow-ink-soft:     #5a5545;
+    --ow-ink-faint:    #9a927d;
+    --ow-navy:         #1f3a5f;
+    --ow-navy-soft:    #2c4f7c;
+    --ow-gold:         #d99a2b;
+    --ow-gold-soft:    #f0e0bd;
+    --ow-rose:         #b8503a;
+    --ow-line:         #e2dccb;
   }
 
   /* ─── Sign-in picker ─── */
@@ -105,7 +105,7 @@
   .ow-picker-sub { font-size: 11px; color: var(--ow-ink-faint); }
 
   a { color: inherit; text-decoration: none; }
-  h1, h2, h3, h4 { margin: 0; font-family: 'Crimson Pro', Georgia, serif; font-weight: 600; line-height: 1.1; letter-spacing: -0.5px; }
+  h1, h2, h3, h4 { margin: 0; font-family: 'Spectral', Georgia, serif; font-weight: 600; line-height: 1.1; letter-spacing: -0.5px; }
   p { margin: 0; }
 
   /* Container scales fluidly across screen sizes:
@@ -274,109 +274,6 @@
     font-style: italic;
   }
 
-  /* ─── Hero two-column layout: headline (left) + always-on free offers (right) ─── */
-  .ow-hero-layout {
-    display: grid;
-    grid-template-columns: 1.05fr 0.95fr;
-    gap: 56px;
-    align-items: center;
-  }
-  /* In the two-column layout the headline shares the row, so cap its size
-     a touch so it never crowds the offers panel. */
-  .ow-hero-layout .ow-hero-slide h1 { font-size: clamp(34px, 4.6vw, 58px); }
-  .ow-hero-layout .ow-hero-slide .sub { margin-bottom: 26px; }
-
-  .ow-hero-offers {
-    background: rgba(255, 255, 255, 0.72);
-    border: 1px solid var(--ow-gold-soft);
-    border-radius: 18px;
-    padding: 26px 26px 20px;
-    box-shadow: 0 24px 60px -30px rgba(12, 58, 74, 0.35);
-    backdrop-filter: blur(2px);
-  }
-  .ow-hero-offers-head {
-    font-family: 'Crimson Pro', Georgia, serif;
-    font-size: 21px;
-    line-height: 1.2;
-    color: var(--ow-ink);
-    margin-bottom: 4px;
-  }
-  .ow-hero-offers-head em { font-style: italic; color: var(--ow-navy); font-weight: 600; }
-  .ow-hero-offers-sub {
-    font-size: 12.5px;
-    color: var(--ow-ink-faint);
-    margin-bottom: 18px;
-    letter-spacing: 0.2px;
-  }
-  .ow-offer-tile {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 10px;
-    margin: 0 -10px;
-    border-top: 1px solid var(--ow-line);
-    border-radius: 10px;
-    text-decoration: none;
-    color: inherit;
-    cursor: pointer;
-    transition: background 0.15s ease, transform 0.15s ease;
-  }
-  .ow-offer-tile:first-of-type { border-top: none; padding-top: 6px; }
-  .ow-offer-tile:hover { background: var(--ow-cream); transform: translateX(2px); }
-  .ow-offer-tile:hover .ow-offer-name { color: var(--ow-navy); }
-  .ow-offer-tile:hover .ow-offer-ico { border-color: var(--ow-gold); }
-  .ow-offer-tile:hover .ow-offer-arrow { opacity: 1; transform: translateX(0); }
-  .ow-offer-arrow {
-    flex-shrink: 0;
-    color: var(--ow-ink-faint);
-    opacity: 0;
-    transform: translateX(-4px);
-    transition: opacity 0.15s ease, transform 0.15s ease;
-    margin-left: -6px;
-  }
-  .ow-offer-arrow svg { width: 15px; height: 15px; display: block; }
-  .ow-offer-ico {
-    flex-shrink: 0;
-    width: 38px; height: 38px;
-    border-radius: 10px;
-    display: grid; place-items: center;
-    background: var(--ow-cream);
-    border: 1px solid var(--ow-gold-soft);
-    color: var(--ow-navy);
-    transition: border-color 0.15s ease;
-  }
-  .ow-offer-ico svg { width: 19px; height: 19px; }
-  .ow-offer-body { flex: 1; min-width: 0; }
-  .ow-offer-name { font-size: 14.5px; font-weight: 700; color: var(--ow-ink); transition: color 0.15s ease; }
-  .ow-offer-desc { font-size: 12px; color: var(--ow-ink-soft); line-height: 1.4; margin-top: 1px; }
-  .ow-offer-badge {
-    flex-shrink: 0;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    padding: 4px 9px;
-    border-radius: 999px;
-    white-space: nowrap;
-  }
-  .ow-offer-badge.is-free { background: var(--ow-navy); color: var(--ow-cream-2); }
-  .ow-offer-badge.is-days { background: var(--ow-gold-soft); color: var(--ow-navy); }
-  .ow-hero-offers-foot {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-top: 16px; padding-top: 14px;
-    border-top: 1px solid var(--ow-line);
-  }
-  .ow-hero-offers-foot a {
-    font-size: 13px; font-weight: 700; color: var(--ow-navy);
-    border-bottom: 1.5px solid var(--ow-navy); padding-bottom: 1px;
-  }
-  .ow-hero-offers-foot .note { font-size: 11px; color: var(--ow-ink-faint); font-style: italic; }
-
-  @media (max-width: 900px) {
-    .ow-hero-layout { grid-template-columns: 1fr; gap: 40px; }
-    .ow-hero-rotator { min-height: auto; }
-  }
-
   /* ─── Trust strip ─── */
   .ow-trust {
     padding: 36px 0;
@@ -391,7 +288,7 @@
     text-align: center;
   }
   .ow-trust .stat .num {
-    font-family: 'Crimson Pro', serif;
+    font-family: 'Spectral', serif;
     font-size: 32px;
     font-weight: 600;
     color: var(--ow-navy);
@@ -800,13 +697,13 @@
     position: absolute;
     top: 12px;
     right: 22px;
-    font-family: 'Crimson Pro', serif;
+    font-family: 'Spectral', serif;
     font-size: 64px;
     color: var(--ow-gold-soft);
     line-height: 1;
   }
   .ow-testimonial .quote {
-    font-family: 'Crimson Pro', serif;
+    font-family: 'Spectral', serif;
     font-size: 17px;
     line-height: 1.5;
     color: var(--ow-ink);
@@ -1031,7 +928,7 @@
   }
   .ow-free-card .fc-price {
     color: var(--ow-gold);
-    font-family: 'Crimson Pro', serif;
+    font-family: 'Spectral', serif;
     font-size: 48px;
     font-weight: 600;
     line-height: 1;
@@ -1084,21 +981,6 @@
     font-style: italic;
     line-height: 1.5;
   }
-  .ow-free-card .fc-cta {
-    margin-top: auto;
-    align-self: flex-start;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--ow-gold);
-    color: var(--ow-navy);
-    font-size: 13px;
-    font-weight: 700;
-    padding: 10px 16px;
-    border-radius: 6px;
-    transition: background 0.15s;
-  }
-  .ow-free-card .fc-cta:hover { background: #d6b894; }
   .ow-free-fine-print {
     margin-top: 30px;
     text-align: center;
@@ -1188,7 +1070,7 @@
   .ow-topbar .brand-tag {
     /* tiny tagline next to the wordmark — anchors brand identity */
     display: block;
-    font-family: 'Crimson Pro', serif;
+    font-family: 'Spectral', serif;
     font-style: italic;
     font-size: 11px;
     letter-spacing: 0;
@@ -1255,7 +1137,7 @@
     color: var(--ow-ink);
     margin-bottom: 20px;
     max-width: 920px;
-    font-family: 'Crimson Pro', Georgia, serif;
+    font-family: 'Spectral', Georgia, serif;
     font-weight: 600;
     line-height: 1.05;
     letter-spacing: -0.5px;
@@ -1381,7 +1263,7 @@
     text-align: center;
   }
   .ow-anchor-beat .container {
-    font-family: 'Crimson Pro', serif;
+    font-family: 'Spectral', serif;
     font-size: 17px;
     color: var(--ow-ink-soft);
     font-style: italic;
@@ -1537,17 +1419,17 @@
          seamless. Browsers don't repeat the strip natively — the
          CSS keyframe scrolls 100% and snaps back, so duplicating
          masks the snap. -->
-    <span class="ow-marquee-item"><span class="pill">FREE</span><strong>SECP registration</strong> — incorporate your business at no cost</span><span class="sep">·</span>
-    <span class="ow-marquee-item"><span class="pill">FREE</span><strong>FBR compliance</strong> — NTN, sales tax, IRIS, first return filing</span><span class="sep">·</span>
-    <span class="ow-marquee-item"><span class="pill">3 MONTHS</span><strong>NIMBY Accounting</strong> — on the house</span><span class="sep">·</span>
-    <span class="ow-marquee-item"><span class="pill">3 MONTHS</span><strong>NIMBY HR</strong> — free for your whole team</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">FREE</span><strong>SECP registration</strong>: incorporate your business at no cost</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">FREE</span><strong>FBR compliance</strong>: NTN, sales tax, IRIS, first return filing</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">3 MONTHS</span><strong>NIMBY Accounting</strong>: on the house</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">3 MONTHS</span><strong>NorthNext HR</strong>: free for your whole team</span><span class="sep">·</span>
     <span class="ow-marquee-item">⭐ ⭐ ⭐ ⭐ ⭐ &nbsp; <strong>"A day saved every week"</strong> — Sarah K., Finance Director</span><span class="sep">·</span>
-    <span class="ow-marquee-item"><span class="pill">NEW</span><strong>Register, run, relax</strong> — everything you need to start</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">NEW</span><strong>Register, run, relax</strong>: everything you need to start</span><span class="sep">·</span>
     <!-- Duplicate set for seamless loop -->
-    <span class="ow-marquee-item"><span class="pill">FREE</span><strong>SECP registration</strong> — incorporate your business at no cost</span><span class="sep">·</span>
-    <span class="ow-marquee-item"><span class="pill">FREE</span><strong>FBR compliance</strong> — NTN, sales tax, IRIS, first return filing</span><span class="sep">·</span>
-    <span class="ow-marquee-item"><span class="pill">3 MONTHS</span><strong>NIMBY Accounting</strong> — on the house</span><span class="sep">·</span>
-    <span class="ow-marquee-item"><span class="pill">3 MONTHS</span><strong>NIMBY HR</strong> — free for your whole team</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">FREE</span><strong>SECP registration</strong>: incorporate your business at no cost</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">FREE</span><strong>FBR compliance</strong>: NTN, sales tax, IRIS, first return filing</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">3 MONTHS</span><strong>NIMBY Accounting</strong>: on the house</span><span class="sep">·</span>
+    <span class="ow-marquee-item"><span class="pill">3 MONTHS</span><strong>NorthNext HR</strong>: free for your whole team</span><span class="sep">·</span>
   </div>
 </div>
 
@@ -1568,22 +1450,22 @@
       <a href="#voices" class="nav-link">Voices</a>
       <a href="#contact" class="nav-link">Contact</a>
       <div style="position: relative;">
-        <span class="ow-signin-link" id="ow-signin-toggle">Sign in</span>
+        <span class="ow-signin-link" id="ow-signin-toggle">Go to product</span>
         <div class="ow-picker" id="ow-picker">
-          <div class="ow-picker-title">Sign in to</div>
-          <a class="ow-picker-row" href="/curator-portal.html">
+          <div class="ow-picker-title">Go to product</div>
+          <a class="ow-picker-row" href="https://onewindow.info/curator-portal">
             <div class="ow-picker-icon" style="background: var(--ow-navy); color: var(--ow-gold);">C</div>
             <div><div class="ow-picker-label">Curator</div><div class="ow-picker-sub">Client advisory portal</div></div>
           </a>
-          <a class="ow-picker-row" href="https://pulse.nimbyconsultants.com">
+          <a class="ow-picker-row" href="https://pulse.nimbyconsultants.com/signin">
             <div class="ow-picker-icon" style="background: #3b6ea5;">P</div>
             <div><div class="ow-picker-label">Pulse</div><div class="ow-picker-sub">Financial dashboard</div></div>
           </a>
-          <a class="ow-picker-row" href="https://hr.northnextventures.com">
+          <a class="ow-picker-row" href="https://hr.northnextventures.com/auth-login">
             <div class="ow-picker-icon" style="background: #4f7a52;">H</div>
-            <div><div class="ow-picker-label">NIMBY HR</div><div class="ow-picker-sub">Attendance & roster</div></div>
+            <div><div class="ow-picker-label">NorthNext HR</div><div class="ow-picker-sub">Attendance & roster</div></div>
           </a>
-          <a class="ow-picker-row" href="https://accnimby.com">
+          <a class="ow-picker-row" href="https://accnimby.com/login">
             <div class="ow-picker-icon" style="background: #7c6a9c;">N</div>
             <div><div class="ow-picker-label">NIMBY Accounting</div><div class="ow-picker-sub">Bookkeeping & accounts</div></div>
           </a>
@@ -1597,7 +1479,6 @@
 <!-- ═══════════════════════ HERO (ROTATING) ═══════════════════════ -->
 <section class="ow-hero" id="top">
   <div class="container">
-    <div class="ow-hero-layout">
     <div class="ow-hero-rotator" id="hero-rotator">
       <div class="ow-hero-viewport" id="hero-viewport">
 
@@ -1620,7 +1501,7 @@
             </span>
             <span class="ow-anchor-phrase">In one window.</span>
           </h1>
-          <p class="sub">Register your business <strong>free</strong>. Get <strong>free business setup advisory</strong>. Run your books and your team on us for the first 90 days. <strong>Pay only when you're really running</strong> — when the business is earning and the tools are earning their keep.</p>
+          <p class="sub">Register your business <strong>free</strong>. Get <strong>free business setup advisory</strong>. Run your books and your team on us for the first 90 days. <strong>Pay only when you're really running</strong>, when the business is earning and the tools are earning their keep.</p>
           <div class="actions">
             <a href="#products" class="ow-cta">Explore the products →</a>
             <a href="#whats-free" class="secondary">See what's free</a>
@@ -1631,7 +1512,7 @@
         <div class="ow-hero-slide" data-duration="6500">
           <div class="eyebrow"><span class="live-dot"></span> Free SECP registration</div>
           <h1>Register your business <em>for free.</em></h1>
-          <p class="sub">Full SECP company registration at no cost. Get incorporated and start running your business — no lawyer fees, no hidden charges. Just bring your business plan.</p>
+          <p class="sub">Full SECP company registration at no cost. Get incorporated and start running your business, with no lawyer fees and no hidden charges. Just bring your business plan.</p>
           <div class="actions">
             <a href="#contact" class="ow-cta">Start registration →</a>
             <a href="#whats-free" class="secondary">See what else is free</a>
@@ -1642,7 +1523,7 @@
         <div class="ow-hero-slide" data-duration="6500">
           <div class="eyebrow"><span class="live-dot"></span> Free FBR compliance</div>
           <h1>FBR setup, <em>done for you.</em></h1>
-          <p class="sub">NTN, sales tax registration, IRIS account, and your first return filing — all included free with OneWindow. Stop chasing your accountant. Start your business properly.</p>
+          <p class="sub">NTN, sales tax registration, IRIS account, and your first return filing, all included free with OneWindow. Stop chasing your accountant. Start your business properly.</p>
           <div class="actions">
             <a href="#contact" class="ow-cta">Get FBR-ready →</a>
             <a href="#whats-free" class="secondary">See what else is free</a>
@@ -1664,7 +1545,7 @@
         <div class="ow-hero-slide" data-duration="6500">
           <div class="eyebrow"><span class="live-dot"></span> 3 months free</div>
           <h1>Manage your team, <em>at no cost.</em></h1>
-          <p class="sub">NIMBY HR free for 90 days. Attendance, leave, tasks, and a searchable policy library — for your whole team. Cancel anytime.</p>
+          <p class="sub">NorthNext HR free for 90 days. Attendance, leave, tasks, and a searchable policy library for your whole team. Cancel anytime.</p>
           <div class="actions">
             <a href="https://hr.northnextventures.com" target="_blank" rel="noopener" class="ow-cta">Set up HR free →</a>
             <a href="#products" class="secondary">See all products</a>
@@ -1691,77 +1572,13 @@
       </div>
       <div class="ow-hero-dots" id="hero-dots"></div>
     </div>
-
-    <!-- Always-on free-offer panel: the concrete value, visible the instant
-         you land — no waiting for the headline to rotate through it. -->
-    <aside class="ow-hero-offers">
-      <div class="ow-hero-offers-head">Everything to get started, <em>free.</em></div>
-      <div class="ow-hero-offers-sub">No card required · Pakistan</div>
-
-      <a class="ow-offer-tile" href="/curator-portal.html">
-        <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5M9 10h.01M15 10h.01M12 10h.01"/></svg></div>
-        <div class="ow-offer-body">
-          <div class="ow-offer-name">Company incorporation</div>
-          <div class="ow-offer-desc">Full SECP registration — no service fee</div>
-        </div>
-        <span class="ow-offer-badge is-free">Free</span>
-        <span class="ow-offer-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
-      </a>
-
-      <a class="ow-offer-tile" href="/curator-portal.html">
-        <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></div>
-        <div class="ow-offer-body">
-          <div class="ow-offer-name">FBR compliance</div>
-          <div class="ow-offer-desc">NTN · sales tax · IRIS · first return filed</div>
-        </div>
-        <span class="ow-offer-badge is-free">Free</span>
-        <span class="ow-offer-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
-      </a>
-
-      <a class="ow-offer-tile" href="/curator-portal.html">
-        <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-        <div class="ow-offer-body">
-          <div class="ow-offer-name">CPA setup advisory</div>
-          <div class="ow-offer-desc">One-hour call with a chartered accountant</div>
-        </div>
-        <span class="ow-offer-badge is-free">Free</span>
-        <span class="ow-offer-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
-      </a>
-
-      <a class="ow-offer-tile" href="https://accnimby.com" target="_blank" rel="noopener">
-        <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg></div>
-        <div class="ow-offer-body">
-          <div class="ow-offer-name">Cloud accounting</div>
-          <div class="ow-offer-desc">NIMBY Accounting — multi-company, unlimited entries</div>
-        </div>
-        <span class="ow-offer-badge is-days">90 days</span>
-        <span class="ow-offer-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
-      </a>
-
-      <a class="ow-offer-tile" href="https://hr.northnextventures.com" target="_blank" rel="noopener">
-        <div class="ow-offer-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-        <div class="ow-offer-body">
-          <div class="ow-offer-name">HR &amp; attendance</div>
-          <div class="ow-offer-desc">NIMBY HR — your whole team</div>
-        </div>
-        <span class="ow-offer-badge is-days">90 days</span>
-        <span class="ow-offer-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
-      </a>
-
-      <div class="ow-hero-offers-foot">
-        <a href="#whats-free">See the full breakdown →</a>
-        <span class="note">Pay only when you're running</span>
-      </div>
-    </aside>
-
-    </div><!-- /ow-hero-layout -->
   </div>
 </section>
 
 <!-- ═══════════════ "What is OneWindow?" anchor beat ═══════════════ -->
 <section class="ow-anchor-beat">
   <div class="container">
-    <strong>ONEWINDOW</strong> &nbsp; is the unified portal to NIMBY&apos;s suite of business software — accounting, analytics, HR, and operations. Built in Pakistan, used everywhere.
+    <strong>ONEWINDOW</strong> &nbsp; is the unified portal to NorthNext Ventures&apos; suite of business software: accounting, analytics, HR, and operations. Built in Pakistan, used everywhere.
   </div>
 </section>
 
@@ -1802,16 +1619,16 @@
       <!-- ───── NIMBY Accounting ───── -->
       <div class="ow-product-card">
         <div class="pc-tag">Accounting</div>
-        <h3>NIMBY Accounting</h3>
+        <h3>NIMBY</h3>
         <p class="pc-pitch">Daily bookkeeping made effortless.</p>
-        <p class="pc-body">From your first sale to your monthly financial statements — record transactions, send invoices, pay bills, and see your numbers without needing an accountant on speed-dial. Built so business owners can do it themselves, and accountants can love it too.</p>
+        <p class="pc-body">From your first sale to your monthly financial statements, OneWindow lets you record transactions, send invoices, pay bills, and see your numbers without needing an accountant on speed-dial. Built so business owners can do it themselves, and accountants can love it too.</p>
         <ul class="pc-features">
           <li>Simple daily transaction entry</li>
           <li>Automatic P&amp;L, balance sheet, and cash flow</li>
           <li>Branded invoices and bills with PDF export</li>
-          <li>Multi-company support — free to start</li>
+          <li>Multi-company support, free to start</li>
         </ul>
-        <a href="https://accnimby.com" target="_blank" rel="noopener" class="pc-cta">Open NIMBY Accounting →</a>
+        <a href="https://accnimby.com" target="_blank" rel="noopener" class="pc-cta">Open NIMBY →</a>
       </div>
 
       <!-- ───── Pulse NIMBY ───── -->
@@ -1829,10 +1646,10 @@
         <a href="https://pulse.nimbyconsultants.com" target="_blank" rel="noopener" class="pc-cta">Open Pulse →</a>
       </div>
 
-      <!-- ───── NIMBY HR ───── -->
+      <!-- ───── NorthNext HR ───── -->
       <div class="ow-product-card">
         <div class="pc-tag">Human Resources</div>
-        <h3>NIMBY HR</h3>
+        <h3>NorthNext HR</h3>
         <p class="pc-pitch">Your team's daily heartbeat.</p>
         <p class="pc-body">Attendance, leave, task management, and a searchable policy library. The kind of HR tool small teams actually use because it gets out of their way.</p>
         <ul class="pc-features">
@@ -1853,9 +1670,9 @@
         <div class="pc-tag">Business Setup · Free</div>
         <h3>Curator</h3>
         <p class="pc-pitch">Start your business properly. For free.</p>
-        <p class="pc-body">Full company registration with SECP, FBR setup (NTN, sales tax, IRIS), and your first return filing — all included free. A chartered accountant walks you through every step so you start with the right foundation, not a future mess to clean up.</p>
+        <p class="pc-body">Full company registration with SECP, FBR setup (NTN, sales tax, IRIS), and your first return filing, all included free. A chartered accountant walks you through every step so you start with the right foundation, not a future mess to clean up.</p>
         <ul class="pc-features">
-          <li>SECP company registration — no service fee</li>
+          <li>SECP company registration, no service fee</li>
           <li>FBR compliance: NTN, sales tax, IRIS</li>
           <li>One-hour advisory with a CPA</li>
           <li>Compliances included for the first three months</li>
@@ -1898,7 +1715,7 @@
           <div class="cf-services">
             <div class="cf-services-label">
               What do you need help with?<span class="req">*</span>
-              <span class="hint">Tick all that apply — we'll route you to the right CPA.</span>
+              <span class="hint">Tick all that apply, and we'll route you to the right CPA.</span>
             </div>
             <div class="cf-services-grid" id="cf-services-grid">
               <label class="cf-service-opt"><input type="checkbox" name="services" value="company_incorporation"> Company incorporation</label>
@@ -1928,10 +1745,10 @@
           </div>
 
           <div class="cf-thanks" id="cf-thanks">
-            <strong>Thanks — we've got your details.</strong><br>
+            <strong>Thanks, we've got your details.</strong><br>
             The fastest next step is a free 30-minute call with one of our CPAs to understand your business and walk you through what's next. Pick a time that suits you:
             <a class="cf-call-cta" href="https://calendly.com/northnextventures/30min" target="_blank" rel="noopener">Book your free 30-min call →</a>
-            <span class="cf-call-note">Prefer we reach out first? No problem — a CPA from our team will be in touch within one business day either way.</span>
+            <span class="cf-call-note">Prefer we reach out first? No problem. A CPA from our team will be in touch within one business day either way.</span>
           </div>
         </form>
 
@@ -1951,17 +1768,19 @@
 
     <div class="ow-free-grid">
 
-      <!-- Card 1: Curator business setup — teaser only; the full story lives on the Curator page -->
+      <!-- Card 1: Full Curator setup service — free forever -->
       <div class="ow-free-card">
         <div class="fc-price">Free</div>
         <div class="fc-period">Always · Pakistan only</div>
         <h3>Full business setup</h3>
-        <p class="fc-pitch">Our Curator service incorporates your company, gets you FBR-ready, and pairs you with a chartered accountant — no service fee, yours to keep.</p>
+        <p class="fc-pitch">The complete Curator package: incorporate your company, get FBR-ready, and sit down with a chartered accountant to set things up properly.</p>
         <ul class="fc-list">
-          <li>SECP registration + FBR (NTN, sales tax, IRIS)</li>
-          <li>A CPA advisory call, plus your first 3 months of compliance</li>
+          <li>SECP company registration, no service fee</li>
+          <li>FBR compliance: NTN, sales tax, IRIS account</li>
+          <li>One-hour advisory call with a CPA</li>
+          <li>Compliances included for the first three months</li>
         </ul>
-        <a href="/curator.html" class="fc-cta">See the full Curator service →</a>
+        <div class="fc-after">No catch. Even if you never become a paying customer, the setup is yours to keep.</div>
       </div>
 
       <!-- Card 2: NIMBY accounting — 3 months free -->
@@ -1969,22 +1788,22 @@
         <div class="fc-price">3 months</div>
         <div class="fc-period">On the house</div>
         <h3>NIMBY Accounting</h3>
-        <p class="fc-pitch">Full access to multi-company cloud accounting for your first 90 days. Invoicing, bills, GL, reports — everything unlocked.</p>
+        <p class="fc-pitch">Full access to multi-company cloud accounting for your first 90 days. Invoicing, bills, GL, reports, everything unlocked.</p>
         <ul class="fc-list">
           <li>Unlimited transactions during the free period</li>
           <li>All companies, all users included</li>
           <li>PDF invoices with your branding</li>
-          <li>Full data export anytime — no lock-in</li>
+          <li>Full data export anytime, no lock-in</li>
         </ul>
         <div class="fc-after">After 3 months: continue on a paid plan or downgrade to our free tier. Your data stays.</div>
       </div>
 
-      <!-- Card 3: NIMBY HR — 3 months free -->
+      <!-- Card 3: NorthNext HR — 3 months free -->
       <div class="ow-free-card">
         <div class="fc-price">3 months</div>
         <div class="fc-period">On the house</div>
-        <h3>NIMBY HR</h3>
-        <p class="fc-pitch">Attendance, leave, tasks, and a searchable policy library — free for your team for the first 90 days.</p>
+        <h3>NorthNext HR</h3>
+        <p class="fc-pitch">Attendance, leave, tasks, and a searchable policy library, free for your team for the first 90 days.</p>
         <ul class="fc-list">
           <li>Unlimited employees during the free period</li>
           <li>Mobile clock-in for the whole team</li>
@@ -2036,7 +1855,7 @@
       <div class="ow-why-card">
         <div class="icon">🤝</div>
         <h3>Real humans on support</h3>
-        <p>When something breaks, you talk to the people who built it — not a ticket queue. Most issues are resolved within a few hours.</p>
+        <p>When something breaks, you talk to the people who built it, not a ticket queue. Most issues are resolved within a few hours.</p>
       </div>
 
       <div class="ow-why-card">
@@ -2084,7 +1903,7 @@
 
       <!-- REPLACE: with real quote from an HR user -->
       <div class="ow-testimonial">
-        <p class="quote">The HR product is the first one our team actually uses without complaint. Attendance, task discussions, the policy library — it's all in one place.</p>
+        <p class="quote">The HR product is the first one our team actually uses without complaint. Attendance, task discussions, the policy library, it's all in one place.</p>
         <div class="author">
           <div class="avatar">FA</div>
           <div>
@@ -2121,14 +1940,14 @@
           <div class="ow-logo-mark"></div>
           <div class="ow-logo-text">ONEWINDOW</div>
         </div>
-        <p class="blurb">The unified portal for NIMBY products. Built in Islamabad, used everywhere.</p>
+        <p class="blurb">The unified portal for NorthNext Ventures products. Built in Islamabad, used everywhere.</p>
       </div>
       <div>
         <div class="col-title">Products</div>
         <ul>
           <li><a href="https://accnimby.com" target="_blank" rel="noopener">NIMBY Accounting</a></li>
           <li><a href="https://pulse.nimbyconsultants.com" target="_blank" rel="noopener">Pulse Analytics</a></li>
-          <li><a href="https://hr.northnextventures.com" target="_blank" rel="noopener">NIMBY HR</a></li>
+          <li><a href="https://hr.northnextventures.com" target="_blank" rel="noopener">NorthNext HR</a></li>
           <li><a href="#curator-card">Curator</a></li>
         </ul>
       </div>
