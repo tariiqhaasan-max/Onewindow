@@ -285,6 +285,32 @@
   }
   .ctask-doc-name { flex: 1; color: var(--ink); }
   .ctask-doc-who { color: var(--ink-soft); font-size: 11px; }
+  /* Advisor-side task questions */
+  .ctask-q-chip {
+    display: inline-block; margin-top: 7px; margin-left: 6px;
+    font-family: var(--font-sans); font-size: 11px; color: #6b5d4a;
+    background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    padding: 2px 10px; cursor: pointer;
+  }
+  .ctask-q-chip:hover { border-color: var(--gold); }
+  .ctask-q-chip.open { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+  .ctask-questions { margin-top: 8px; border-left: 2px solid #d8e4e0; padding-left: 10px; }
+  .ctq-item { padding: 6px 0; border-bottom: 1px solid #f0ece3; }
+  .ctq-qrow { display: flex; align-items: center; gap: 8px; }
+  .ctq-qtext { flex: 1; font-size: 12px; color: var(--ink); font-weight: 500; }
+  .ctq-del { border: none; background: none; color: #a3372a; font-size: 16px; line-height: 1; cursor: pointer; padding: 0 4px; }
+  .ctq-answer { font-size: 12px; color: #2d5a3d; margin-top: 3px; }
+  .ctq-answer.empty { color: var(--ink-faint); font-style: italic; }
+  .ctq-add { display: flex; gap: 6px; margin-top: 8px; }
+  .ctq-add-input { flex: 1; font-size: 12px; }
+  /* Client-side questions */
+  .client-q-block { margin-top: 12px; background: #f4f8f6; border-radius: 6px; padding: 12px 14px; }
+  .client-q-head { font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 10px; }
+  .client-q-item { margin-bottom: 12px; }
+  .client-q-label { display: block; font-size: 13px; color: var(--ink); margin-bottom: 4px; }
+  .client-q-answer-row { display: flex; gap: 8px; align-items: center; }
+  .client-q-input { flex: 1; }
+  .client-q-saved { font-size: 11px; color: #2d5a3d; margin-top: 3px; display: inline-block; transition: opacity .3s; }
   .newtype-overlay {
     position: fixed; inset: 0; background: rgba(35,38,43,0.55);
     display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
@@ -3674,6 +3700,7 @@
 
   let clientMessagesCache = [];
   let clientTasksCache = [];
+  let clientQuestionsCache = [];
   let clientDocsCache = [];
   let clientMessageChannel = null;
 
@@ -3718,6 +3745,13 @@
       return;
     }
     clientTasksCache = data || [];
+    // Load any questions the advisor has attached to these tasks.
+    try {
+      const { data: qs } = await sb.from('curator_task_questions')
+        .select('*').eq('client_id', currentClient.id)
+        .order('sort_order', { ascending: true });
+      clientQuestionsCache = qs || [];
+    } catch (e) { clientQuestionsCache = []; }
     renderClientTasks();
     updateClientStats();
   }
@@ -3784,6 +3818,23 @@
         }
       }
 
+      const myQuestions = (clientQuestionsCache || []).filter(q => q.task_id === task.id).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+      let questionsBlock = '';
+      if (myQuestions.length) {
+        questionsBlock = `<div class="client-q-block">
+          <div class="client-q-head">Your advisor needs a few details:</div>` +
+          myQuestions.map(q => `
+            <div class="client-q-item">
+              <label class="client-q-label">${escapeHtml(q.question)}</label>
+              <div class="client-q-answer-row">
+                <input class="field-input client-q-input" id="cq-${q.id}" value="${q.answer ? escapeHtml(q.answer) : ''}" placeholder="Your answer…">
+                <button class="nb-act-btn primary" onclick="clientSaveAnswer('${q.id}')">Save</button>
+              </div>
+              ${q.answer && q.answer.trim() ? `<span class="client-q-saved" id="cqSaved-${q.id}">✓ Saved</span>` : ''}
+            </div>`).join('') +
+          `</div>`;
+      }
+
       html += `
         <div class="task-item ${isDone ? 'done' : ''}">
           <div class="task-checkbox ${isDone ? 'checked' : ''}" onclick="toggleClientTask('${task.id}')"></div>
@@ -3792,6 +3843,7 @@
             ${task.description ? `<div class="task-desc">${escapeHtml(task.description)}</div>` : ''}
             ${dueBadge}
             ${actionBlock}
+            ${questionsBlock}
           </div>
           <div></div>
         </div>
@@ -4279,6 +4331,7 @@
   let cdrawerCompanies = [];          // companies for the open client
   let cdrawerCurrentCompanyId = null; // selected company filter
   let cdrawerDocsCache = [];
+  let cdrawerQuestionsCache = [];
   let cdrawerDocSubtab = 'client';
   let cdrawerMessagesCache = [];
   let cdrawerMessageChannel = null;
@@ -4545,6 +4598,13 @@
       const { data: docs } = await dq.order('created_at', { ascending: false });
       cdrawerDocsCache = docs || [];
     } catch (e) { /* non-fatal: tasks still render without doc links */ }
+    // Load task questions so the advisor can manage them inline.
+    try {
+      const { data: qs } = await sb.from('curator_task_questions')
+        .select('*').eq('client_id', cdrawerCurrentClient.id)
+        .order('sort_order', { ascending: true });
+      cdrawerQuestionsCache = qs || [];
+    } catch (e) { cdrawerQuestionsCache = []; }
     renderCdrawerTasks();
   }
   function renderCdrawerTasks() {
@@ -4646,6 +4706,31 @@
           `</div>`
         : '';
 
+      const taskQuestions = (cdrawerQuestionsCache || []).filter(q => q.task_id === task.id).sort((a,b) => (a.sort_order||0)-(b.sort_order||0));
+      const answeredCount = taskQuestions.filter(q => q.answer && q.answer.trim()).length;
+      const qChipLabel = taskQuestions.length
+        ? `❔ ${answeredCount}/${taskQuestions.length} answered`
+        : `❔ Add questions`;
+      const qChip = `<button class="ctask-q-chip" onclick="cdrawerToggleTaskQ('${task.id}', this)">${qChipLabel}</button>`;
+      const qRegion = `<div class="ctask-questions" id="ctaskQ-${task.id}" style="display:none;">` +
+        taskQuestions.map(q => {
+          const ans = q.answer && q.answer.trim()
+            ? `<div class="ctq-answer">${escapeHtml(q.answer)}</div>`
+            : `<div class="ctq-answer empty">No answer yet</div>`;
+          return `<div class="ctq-item">
+              <div class="ctq-qrow">
+                <span class="ctq-qtext">${escapeHtml(q.question)}</span>
+                <button class="ctq-del" onclick="cdrawerDeleteQuestion('${q.id}','${task.id}')" title="Remove question">×</button>
+              </div>
+              ${ans}
+            </div>`;
+        }).join('') +
+        `<div class="ctq-add">
+           <input class="field-input ctq-add-input" id="ctqNew-${task.id}" placeholder="Type a question for the client…" onkeydown="if(event.key==='Enter'){cdrawerAddQuestion('${task.id}');}">
+           <button class="btn-ghost btn-row" onclick="cdrawerAddQuestion('${task.id}')">Add</button>
+         </div>` +
+        `</div>`;
+
       return `
         <div class="ctask-row ${isDone ? 'done' : ''}" data-task-id="${task.id}">
           <div class="task-checkbox ${isDone ? 'checked' : ''}" onclick="cdrawerToggleTask('${task.id}')"></div>
@@ -4654,7 +4739,9 @@
             ${task.description ? `<span class="ctask-desc">${escapeHtml(task.description)}</span>` : ''}
             ${progressChips}
             ${docsChip}
+            ${qChip}
             ${docsRegion}
+            ${qRegion}
           </div>
           ${dueBadge}
           <button class="ctask-del" onclick="cdrawerDeleteTask('${task.id}')" title="Delete">Delete</button>
@@ -4863,6 +4950,47 @@
     const showing = region.style.display !== 'none';
     region.style.display = showing ? 'none' : '';
     if (btn) btn.classList.toggle('open', !showing);
+  };
+
+  window.cdrawerToggleTaskQ = function (taskId, btn) {
+    const region = $('ctaskQ-' + taskId);
+    if (!region) return;
+    const showing = region.style.display !== 'none';
+    region.style.display = showing ? 'none' : '';
+    if (btn) btn.classList.toggle('open', !showing);
+  };
+
+  window.cdrawerAddQuestion = async function (taskId) {
+    const input = $('ctqNew-' + taskId);
+    if (!input) return;
+    const q = input.value.trim();
+    if (!q) return;
+    const task = cdrawerTasksCache.find(t => t.id === taskId);
+    const existing = cdrawerQuestionsCache.filter(x => x.task_id === taskId);
+    const { data, error } = await sb.from('curator_task_questions').insert({
+      task_id: taskId,
+      client_id: cdrawerCurrentClient.id,
+      question: q,
+      sort_order: existing.length,
+      created_by: currentUser.id
+    }).select().single();
+    if (error) { alert('Could not add question: ' + error.message); return; }
+    cdrawerQuestionsCache.push(data);
+    renderCdrawerTasks();
+    // Re-open the region + refocus so the advisor can keep adding.
+    setTimeout(() => {
+      const r = $('ctaskQ-' + taskId); if (r) r.style.display = '';
+      const i = $('ctqNew-' + taskId); if (i) i.focus();
+    }, 0);
+  };
+
+  window.cdrawerDeleteQuestion = async function (qId, taskId) {
+    if (!confirm('Remove this question?')) return;
+    const { error } = await sb.from('curator_task_questions').delete().eq('id', qId);
+    if (error) { alert('Could not remove: ' + error.message); return; }
+    cdrawerQuestionsCache = cdrawerQuestionsCache.filter(q => q.id !== qId);
+    renderCdrawerTasks();
+    setTimeout(() => { const r = $('ctaskQ-' + taskId); if (r) r.style.display = ''; }, 0);
   };
 
   // Set advisor progress % (independent of completion tick).
@@ -5294,6 +5422,29 @@
   // Note: the inline renderClientTasks function defined earlier in the IIFE
   // has been replaced in place to handle compliance metadata, filtering,
   // category badges, and client-action buttons. No override needed here.
+
+  window.clientSaveAnswer = async function (qId) {
+    const input = $('cq-' + qId);
+    if (!input) return;
+    const answer = input.value.trim();
+    const { data, error } = await sb.from('curator_task_questions')
+      .update({ answer: answer || null, answered_at: answer ? new Date().toISOString() : null })
+      .eq('id', qId).select().single();
+    if (error) { alert('Could not save: ' + error.message); return; }
+    const idx = clientQuestionsCache.findIndex(q => q.id === qId);
+    if (idx >= 0) clientQuestionsCache[idx] = data;
+    // Show a lightweight saved confirmation without a full re-render.
+    let saved = $('cqSaved-' + qId);
+    if (!saved) {
+      saved = document.createElement('span');
+      saved.className = 'client-q-saved';
+      saved.id = 'cqSaved-' + qId;
+      input.parentElement.parentElement.appendChild(saved);
+    }
+    saved.textContent = '✓ Saved';
+    saved.style.opacity = '1';
+    setTimeout(() => { if (saved) saved.style.opacity = '0.5'; }, 1500);
+  };
 
   window.clientSetTaskAction = async function (taskId, action) {
     if (!['asked_curator','self_handling'].includes(action)) return;
