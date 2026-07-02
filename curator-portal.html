@@ -4110,7 +4110,8 @@
           </div>
           <div class="doc-item-size">${fmtFileSize(doc.file_size)}</div>
           <div class="doc-item-actions">
-            <button class="doc-action" onclick="downloadDoc('${doc.id}', '${sp}', '${doc.filename.replace(/'/g, "\\'")}')">Download</button>
+            <button class="doc-action" onclick="docView('${sp}')">View</button>
+            <button class="doc-action" onclick="docDownload('${sp}', '${doc.filename.replace(/'/g, "\\'")}')">Download</button>
             ${isCurator ? '' : `<button class="doc-action danger" onclick="deleteDoc('${doc.id}', '${sp}')">Delete</button>`}
           </div>
         </div>`;
@@ -4119,10 +4120,44 @@
     container.innerHTML = html;
   }
 
+  // ── Shared doc actions: View (open in tab) + Download (force save) ──
+  // Download fetches the file as a blob and saves via <a download>, which
+  // works even when Safari blocks window.open popups.
+  async function docSignedUrl(storagePath) {
+    if (!storagePath) { alert('No file attached yet.'); return null; }
+    const { data, error } = await sb.storage.from('curator-files').createSignedUrl(storagePath, 120);
+    if (error || !data) { alert('Could not access file: ' + (error ? error.message : 'unknown')); return null; }
+    return data.signedUrl;
+  }
+  window.docView = async function (storagePath) {
+    // Open the tab synchronously so the popup blocker allows it, then set URL.
+    const tab = window.open('', '_blank');
+    const url = await docSignedUrl(storagePath);
+    if (!url) { if (tab) tab.close(); return; }
+    if (tab) tab.location = url; else window.location = url;
+  };
+  window.docDownload = async function (storagePath, filename) {
+    const url = await docSignedUrl(storagePath);
+    if (!url) return;
+    try {
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = filename || (storagePath.split('/').pop()) || 'document';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objUrl), 4000);
+    } catch (e) {
+      // Fallback: navigate to the signed URL if blob fetch fails.
+      window.location = url;
+    }
+  };
+
   window.downloadDoc = async function (docId, storagePath, filename) {
-    const { data, error } = await sb.storage.from('curator-files').createSignedUrl(storagePath, 60);
-    if (error || !data) { alert('Download failed: ' + (error ? error.message : 'unknown')); return; }
-    window.open(data.signedUrl, '_blank');
+    return window.docDownload(storagePath, filename);
   };
 
   window.deleteDoc = async function (docId, storagePath) {
@@ -4695,7 +4730,8 @@
               const isReq = d.status === 'requested';
               const right = isReq
                 ? `<span class="doc-pending-badge">Pending</span>`
-                : `<button class="doc-action" onclick="cdrawerDownloadDoc('${(d.storage_path||'').replace(/'/g, "\\'")}')">Download</button>`;
+                : `<button class="doc-action" onclick="docView('${(d.storage_path||'').replace(/'/g, "\\'")}')">View</button>
+                   <button class="doc-action" onclick="docDownload('${(d.storage_path||'').replace(/'/g, "\\'")}','${(d.filename||'').replace(/'/g, "\\'")}')">Download</button>`;
               const nm = isReq ? (d.requested_label || d.filename) : d.filename;
               return `<div class="ctask-doc-item">
                   <span class="ctask-doc-name">${isReq ? '📋 ' : ''}${escapeHtml(nm)}</span>
@@ -5086,7 +5122,8 @@
             ${taskLine}${noteLine}
           </div>
           <div class="doc-item-actions">
-            <button class="doc-action" onclick="cdrawerDownloadDoc('${(doc.storage_path||'').replace(/'/g, "\\'")}')">Download</button>
+            <button class="doc-action" onclick="docView('${(doc.storage_path||'').replace(/'/g, "\\'")}')">View</button>
+            <button class="doc-action" onclick="docDownload('${(doc.storage_path||'').replace(/'/g, "\\'")}','${(doc.filename||'').replace(/'/g, "\\'")}')">Download</button>
           </div>
         </div>`;
     };
@@ -5116,10 +5153,7 @@
     loadCdrawerDocs();
   };
   window.cdrawerDownloadDoc = async function (storagePath) {
-    if (!storagePath) { alert('No file attached yet.'); return; }
-    const { data, error } = await sb.storage.from('curator-files').createSignedUrl(storagePath, 60);
-    if (error) { alert('Download failed: ' + error.message); return; }
-    window.open(data.signedUrl, '_blank');
+    return window.docDownload(storagePath);
   };
 
   // ── Curator document actions: request a doc, or upload a file/receipt ──
