@@ -348,6 +348,26 @@
   }
   .client-price-inline .cpi-total { font-weight: 700; color: var(--ink); }
   .client-price-inline.covered { background: #eef4f1; border-color: #cfe0d8; color: #2d6a4a; font-style: italic; }
+  .ctp-note { font-size: 10px; color: var(--ink-faint); margin-top: 6px; font-style: italic; }
+  .company-retainer-badge.accepted { color: #2d6a4a; background: #eef4f1; border-color: #cfe0d8; }
+  .company-retainer-badge.pending { color: #8a6d1f; background: #fbf3dd; border-color: #ecdcae; }
+  .client-co-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .client-retainer-banner {
+    border-radius: 10px; padding: 12px 16px; font-size: 13px; line-height: 1.5; margin-bottom: 12px;
+  }
+  .client-retainer-banner.offer {
+    background: #fbf7ee; border: 1px solid #ecdcae; color: var(--ink);
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  }
+  .client-retainer-banner.accepted {
+    background: #eef4f1; border: 1px solid #cfe0d8; color: #2d6a4a;
+  }
+  .client-retainer-btn {
+    font-family: var(--font-sans); font-size: 13px; font-weight: 600;
+    background: var(--navy); color: var(--cream); border: none; border-radius: 8px;
+    padding: 9px 18px; cursor: pointer; white-space: nowrap;
+  }
+  .client-retainer-btn:hover { background: var(--navy-soft, #2c4f7c); }
   .client-doc-chip {
     display: inline-block; margin-top: 10px;
     font-family: var(--font-sans); font-size: 12px; color: var(--navy);
@@ -3856,20 +3876,54 @@
   function renderClientCompanyBar() {
     const bar = $('clientCompanyBar');
     if (!bar) return;
-    // Only show when the client has more than one company.
-    if (!clientCompanies || clientCompanies.length < 2) {
-      bar.style.display = 'none';
-      clientCurrentCompanyId = null; // single/no company → show everything
-      return;
+    // Company switcher chips (only when 2+ companies).
+    let html = '';
+    if (clientCompanies && clientCompanies.length >= 2) {
+      html += `<div class="client-co-chips">`;
+      html += `<button class="client-co-chip ${!clientCurrentCompanyId ? 'active' : ''}" onclick="clientSwitchCompany('')">All companies</button>`;
+      clientCompanies.forEach(co => {
+        const label = co.name + (co.business_type ? ' · ' + co.business_type : '');
+        html += `<button class="client-co-chip ${clientCurrentCompanyId === co.id ? 'active' : ''}" onclick="clientSwitchCompany('${co.id}')">${escapeHtml(label)}</button>`;
+      });
+      html += `</div>`;
     }
-    bar.style.display = '';
-    let html = `<button class="client-co-chip ${!clientCurrentCompanyId ? 'active' : ''}" onclick="clientSwitchCompany('')">All companies</button>`;
-    clientCompanies.forEach(co => {
-      const label = co.name + (co.business_type ? ' · ' + co.business_type : '');
-      html += `<button class="client-co-chip ${clientCurrentCompanyId === co.id ? 'active' : ''}" onclick="clientSwitchCompany('${co.id}')">${escapeHtml(label)}</button>`;
+
+    // Retainer offer/accepted banner. Show per company that has a price set.
+    const money = n => 'PKR ' + Number(n || 0).toLocaleString('en-PK');
+    const relevant = clientCurrentCompanyId
+      ? clientCompanies.filter(c => c.id === clientCurrentCompanyId)
+      : clientCompanies;
+    relevant.forEach(co => {
+      if (co.annual_retainer == null || Number(co.annual_retainer) <= 0) return;
+      const who = clientCompanies.length >= 2 ? `<strong>${escapeHtml(co.name)}</strong> · ` : '';
+      if (co.retainer_accepted_at) {
+        html += `<div class="client-retainer-banner accepted">${who}Annual compliance plan active: <strong>${money(co.annual_retainer)}/yr</strong>. Your recurring compliance service is covered; you only pay government reimbursements as receipts come in.</div>`;
+      } else {
+        html += `<div class="client-retainer-banner offer">
+            <div>${who}Let us handle all your recurring compliance for a flat <strong>${money(co.annual_retainer)}/year</strong>. Individual service fees disappear; you only cover actual government fees (with receipts).</div>
+            <button class="client-retainer-btn" onclick="clientAcceptRetainer('${co.id}')">Accept annual plan</button>
+          </div>`;
+      }
     });
+
+    if (!html) { bar.style.display = 'none'; return; }
+    bar.style.display = '';
     bar.innerHTML = html;
   }
+
+  window.clientAcceptRetainer = async function (companyId) {
+    const co = (clientCompanies || []).find(c => c.id === companyId);
+    if (!co) return;
+    if (!confirm(`Accept the annual compliance plan for ${co.name} at PKR ${Number(co.annual_retainer).toLocaleString('en-PK')}/year?\n\nYour recurring compliance service fees will be covered by this plan. You'll still pay actual government fees (reimbursements) as receipts are added.`)) return;
+    const { data, error } = await sb.from('curator_companies')
+      .update({ retainer_accepted_at: new Date().toISOString() })
+      .eq('id', companyId).select().single();
+    if (error) { alert('Could not accept the plan: ' + error.message); return; }
+    const idx = clientCompanies.findIndex(c => c.id === companyId);
+    if (idx >= 0) clientCompanies[idx] = data;
+    renderClientCompanyBar();
+    renderClientTasks();
+  };
 
   window.clientSwitchCompany = function (companyId) {
     clientCurrentCompanyId = companyId || null;
@@ -3996,15 +4050,26 @@
           `</div>`;
       }
 
-      // Pricing (read-only). Recurring compliance covered by the company's
-      // annual retainer shows "Included in retainer" instead of a fee.
+      // Pricing (read-only). Under an accepted retainer, recurring compliance
+      // shows no service fee; reimbursement appears only once a receipt document
+      // is attached to the task. One-off tasks show fee + reimbursement.
       let pricingBlock = '';
       const cIsRecurringCompliance = task.is_compliance && task.recurrence && task.recurrence !== 'none';
       const cCompany = (clientCompanies || []).find(c => c.id === task.company_id);
       const cRetainer = cCompany && cCompany.annual_retainer != null ? Number(cCompany.annual_retainer) : null;
+      const cRetainerActive = cIsRecurringCompliance && cRetainer && cRetainer > 0 && !!(cCompany && cCompany.retainer_accepted_at);
+      const cHasReceipt = (clientDocsCache || []).some(d => d.task_id === task.id && d.status !== 'requested');
       const money = n => 'PKR ' + Number(n || 0).toLocaleString('en-PK');
-      if (cIsRecurringCompliance && cRetainer && cRetainer > 0) {
-        pricingBlock = `<div class="client-price-inline covered">Included in your annual retainer</div>`;
+
+      if (cRetainerActive) {
+        const reim = task.reimbursement != null ? Number(task.reimbursement) : 0;
+        if (reim > 0 && cHasReceipt) {
+          pricingBlock = `<div class="client-price-inline covered">Covered by your annual plan · <strong>reimbursement ${money(reim)}</strong> (govt fee, receipt attached)</div>`;
+        } else if (reim > 0) {
+          pricingBlock = `<div class="client-price-inline covered">Covered by your annual plan · reimbursement billed when the receipt is added</div>`;
+        } else {
+          pricingBlock = `<div class="client-price-inline covered">Covered by your annual plan</div>`;
+        }
       } else if (task.service_fee != null || task.reimbursement != null) {
         const f = Number(task.service_fee || 0), r = Number(task.reimbursement || 0);
         pricingBlock = `<div class="client-price-inline">
@@ -4693,7 +4758,7 @@
       <button class="btn-ghost btn-row" onclick="cdrawerEditCompany()">Edit</button>
       <button class="btn-ghost btn-row" onclick="cdrawerDeleteCompany()">Delete</button>
       <button class="btn-ghost btn-row" onclick="cdrawerAddCompany()">+ Add company</button>
-      ${(() => { const co = cdrawerCompanies.find(c => c.id === cdrawerCurrentCompanyId); return (co && co.annual_retainer != null && Number(co.annual_retainer) > 0) ? `<span class="company-retainer-badge" title="Annual compliance retainer">Retainer: PKR ${Number(co.annual_retainer).toLocaleString('en-PK')}/yr</span>` : ''; })()}`;
+      ${(() => { const co = cdrawerCompanies.find(c => c.id === cdrawerCurrentCompanyId); if (!co || co.annual_retainer == null || Number(co.annual_retainer) <= 0) return ''; const amt = Number(co.annual_retainer).toLocaleString('en-PK'); return co.retainer_accepted_at ? `<span class="company-retainer-badge accepted" title="Client accepted the annual plan">Retainer active: PKR ${amt}/yr ✓</span>` : `<span class="company-retainer-badge pending" title="Offered, awaiting client acceptance">Retainer offered: PKR ${amt}/yr</span>`; })()}`;
     populateFormCompanySelects();
   }
 
@@ -4960,29 +5025,39 @@
          </div>` +
         `</div>`;
 
-      // Pricing: service fee + reimbursement (no discount). Recurring compliance
-      // is covered by the company's annual retainer when set, so it hides pricing.
+      // Pricing model:
+      //  - Recurring compliance under an ACCEPTED retainer: service fee is
+      //    covered (hidden for client); reimbursement is still owed and shows
+      //    to the client once a receipt document is attached to the task.
+      //  - One-off tasks: fee + reimbursement as normal.
       const isRecurringCompliance = task.is_compliance && task.recurrence && task.recurrence !== 'none';
       const taskCompany = (cdrawerCompanies || []).find(c => c.id === task.company_id);
       const companyRetainer = taskCompany && taskCompany.annual_retainer != null ? Number(taskCompany.annual_retainer) : null;
-      const coveredByRetainer = isRecurringCompliance && companyRetainer && companyRetainer > 0;
+      const retainerAccepted = !!(taskCompany && taskCompany.retainer_accepted_at);
+      const retainerActive = isRecurringCompliance && companyRetainer && companyRetainer > 0 && retainerAccepted;
+      const taskHasReceipt = (cdrawerDocsCache || []).some(d => d.task_id === task.id && d.status !== 'requested');
       const money = n => 'PKR ' + Number(n || 0).toLocaleString('en-PK');
 
-      let priceChip = '', priceRegion = '';
-      if (coveredByRetainer) {
-        priceChip = `<span class="ctask-price-chip covered" title="Covered by the annual retainer">Included in retainer</span>`;
+      // The chip summary (what's owed on this task).
+      let chipLabel;
+      if (retainerActive) {
+        const reim = task.reimbursement != null ? Number(task.reimbursement) : null;
+        chipLabel = 'Retainer' + (reim && taskHasReceipt ? ' + reimb. ' + money(reim) : (reim ? ' + reimb. (await receipt)' : ''));
       } else {
-        const hasPricing = task.service_fee != null || task.reimbursement != null;
-        const pTotal = Number(task.service_fee || 0) + Number(task.reimbursement || 0);
-        priceChip = `<button class="ctask-price-chip" onclick="cdrawerToggleTaskPrice('${task.id}', this)">${hasPricing ? money(pTotal) : '＋ Fee'}</button>`;
-        priceRegion = `<div class="ctask-price" id="ctaskPrice-${task.id}" style="display:none;">
+        const has = task.service_fee != null || task.reimbursement != null;
+        chipLabel = has ? money(Number(task.service_fee || 0) + Number(task.reimbursement || 0)) : '＋ Fee';
+      }
+      const priceChip = `<button class="ctask-price-chip${retainerActive ? ' covered' : ''}" onclick="cdrawerToggleTaskPrice('${task.id}', this)">${chipLabel}</button>`;
+
+      // Advisor can always edit both numbers (fee is just hidden from client under retainer).
+      const priceRegion = `<div class="ctask-price" id="ctaskPrice-${task.id}" style="display:none;">
             <div class="ctp-grid">
-              <label class="ctp-field"><span>Service fee</span><input type="number" class="field-input" id="ctpFee-${task.id}" value="${task.service_fee != null ? task.service_fee : ''}" placeholder="0"></label>
+              <label class="ctp-field"><span>Service fee${retainerActive ? ' (in retainer)' : ''}</span><input type="number" class="field-input" id="ctpFee-${task.id}" value="${task.service_fee != null ? task.service_fee : ''}" placeholder="0"></label>
               <label class="ctp-field"><span>Reimbursement</span><input type="number" class="field-input" id="ctpReim-${task.id}" value="${task.reimbursement != null ? task.reimbursement : ''}" placeholder="0"></label>
               <button class="btn-ghost btn-row ctp-save" onclick="cdrawerSaveTaskPrice('${task.id}')">Save</button>
             </div>
+            ${retainerActive ? `<div class="ctp-note">Service fee is covered by the annual retainer. Reimbursement is billed to the client once a receipt is attached${taskHasReceipt ? ' (receipt attached ✓)' : ' (no receipt yet)'}.</div>` : ''}
           </div>`;
-      }
 
       return `
         <div class="ctask-row ${isDone ? 'done' : ''}" data-task-id="${task.id}">
