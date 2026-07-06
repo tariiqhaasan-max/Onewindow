@@ -368,6 +368,12 @@
     padding: 9px 18px; cursor: pointer; white-space: nowrap;
   }
   .client-retainer-btn:hover { background: var(--navy-soft, #2c4f7c); }
+  .client-retainer-btn.ghost {
+    background: transparent; color: var(--navy); border: 1px solid var(--navy);
+  }
+  .client-retainer-btn.ghost:hover { background: rgba(31,58,95,0.06); }
+  .client-retainer-choices { display: flex; gap: 8px; flex-wrap: wrap; }
+  .client-retainer-banner.accepted { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
   .client-doc-chip {
     display: inline-block; margin-top: 10px;
     font-family: var(--font-sans); font-size: 12px; color: var(--navy);
@@ -3796,6 +3802,7 @@
   let clientMessagesCache = [];
   let clientTasksCache = [];
   let clientCompanies = [];
+  const retainerOfferDismissed = new Set();
   let clientCurrentCompanyId = null;
   let clientQuestionsCache = [];
   let clientDocsCache = [];
@@ -3897,11 +3904,17 @@
       if (co.annual_retainer == null || Number(co.annual_retainer) <= 0) return;
       const who = clientCompanies.length >= 2 ? `<strong>${escapeHtml(co.name)}</strong> · ` : '';
       if (co.retainer_accepted_at) {
-        html += `<div class="client-retainer-banner accepted">${who}Annual compliance plan active: <strong>${money(co.annual_retainer)}/yr</strong>. Your recurring compliance service is covered; you only pay government reimbursements as receipts come in.</div>`;
-      } else {
+        html += `<div class="client-retainer-banner accepted">
+            <div>${who}Annual compliance plan active: <strong>${money(co.annual_retainer)}/yr</strong>. Your recurring compliance service is covered; you only pay government reimbursements as receipts come in.</div>
+            <button class="client-retainer-btn ghost" onclick="clientRevertRetainer('${co.id}')">Switch to task-by-task</button>
+          </div>`;
+      } else if (!retainerOfferDismissed.has(co.id)) {
         html += `<div class="client-retainer-banner offer">
-            <div>${who}Let us handle all your recurring compliance for a flat <strong>${money(co.annual_retainer)}/year</strong>. Individual service fees disappear; you only cover actual government fees (with receipts).</div>
-            <button class="client-retainer-btn" onclick="clientAcceptRetainer('${co.id}')">Accept annual plan</button>
+            <div>${who}Handle all your recurring compliance (monthly and yearly) for a flat <strong>${money(co.annual_retainer)}/year</strong>? Individual service fees disappear; you only cover actual government fees (with receipts). Or keep paying task by task.</div>
+            <div class="client-retainer-choices">
+              <button class="client-retainer-btn" onclick="clientAcceptRetainer('${co.id}')">Yes, I accept</button>
+              <button class="client-retainer-btn ghost" onclick="clientDeclineRetainer('${co.id}')">No, task by task</button>
+            </div>
           </div>`;
       }
     });
@@ -3911,6 +3924,12 @@
     bar.innerHTML = html;
   }
 
+  window.clientDeclineRetainer = function (companyId) {
+    // Stay on task-by-task (the default). Dismiss the offer for this session.
+    retainerOfferDismissed.add(companyId);
+    renderClientCompanyBar();
+  };
+
   window.clientAcceptRetainer = async function (companyId) {
     const co = (clientCompanies || []).find(c => c.id === companyId);
     if (!co) return;
@@ -3919,6 +3938,20 @@
       .update({ retainer_accepted_at: new Date().toISOString() })
       .eq('id', companyId).select().single();
     if (error) { alert('Could not accept the plan: ' + error.message); return; }
+    const idx = clientCompanies.findIndex(c => c.id === companyId);
+    if (idx >= 0) clientCompanies[idx] = data;
+    renderClientCompanyBar();
+    renderClientTasks();
+  };
+
+  window.clientRevertRetainer = async function (companyId) {
+    const co = (clientCompanies || []).find(c => c.id === companyId);
+    if (!co) return;
+    if (!confirm(`Switch ${co.name} back to task-by-task pricing?\n\nThe annual plan will no longer apply. Each recurring compliance task will show its own service fee again, and you'll be billed per task instead of the flat annual price.`)) return;
+    const { data, error } = await sb.from('curator_companies')
+      .update({ retainer_accepted_at: null })
+      .eq('id', companyId).select().single();
+    if (error) { alert('Could not switch back: ' + error.message); return; }
     const idx = clientCompanies.findIndex(c => c.id === companyId);
     if (idx >= 0) clientCompanies[idx] = data;
     renderClientCompanyBar();
