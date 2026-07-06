@@ -318,27 +318,36 @@
   }
   .client-q-item.answered { opacity: 0.85; }
   .client-q-tick { color: #2d7a43; font-weight: 700; }
-  /* Advisor pricing editor */
+  /* Compact chip row so title stays prominent */
+  .ctask-chiprow { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 7px; }
+  .ctask-chiprow > * { margin-top: 0 !important; }
+  /* Advisor pricing (compact) */
   .ctask-price-chip {
-    display: inline-block; margin-top: 7px; margin-left: 6px;
+    display: inline-block;
     font-family: var(--font-sans); font-size: 11px; color: #6b4e00;
     background: #fbf3dd; border: 1px solid #ecdcae; border-radius: 12px;
     padding: 2px 10px; cursor: pointer;
   }
   .ctask-price-chip:hover { border-color: var(--gold); }
   .ctask-price-chip.open { background: var(--navy); color: var(--cream); border-color: var(--navy); }
-  .ctask-price { margin-top: 8px; border-left: 2px solid #ecdcae; padding-left: 10px; }
-  .ctp-grid { display: flex; gap: 8px; flex-wrap: wrap; }
-  .ctp-field { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--ink-soft); flex: 1; min-width: 90px; }
-  .ctp-field input { width: 100%; }
-  .ctp-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; gap: 8px; }
-  .ctp-total { font-size: 13px; color: var(--ink); }
-  .ctp-hint { font-size: 10px; color: var(--ink-faint); margin-top: 4px; font-style: italic; }
-  /* Client pricing breakdown (read-only) */
-  .client-price-block { margin-top: 12px; background: #fbf7ee; border: 1px solid #ecdcae; border-radius: 8px; padding: 10px 14px; }
-  .client-price-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-soft); padding: 3px 0; }
-  .client-price-row.discount span:last-child { color: #2d7a43; }
-  .client-price-row.total { border-top: 1px solid #ecdcae; margin-top: 4px; padding-top: 7px; font-weight: 700; color: var(--ink); font-size: 14px; }
+  .ctask-price-chip.covered { background: #eef4f1; color: #2d6a4a; border-color: #cfe0d8; cursor: default; }
+  .ctask-price { margin-top: 8px; }
+  .ctp-grid { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+  .ctp-field { display: flex; flex-direction: column; gap: 2px; font-size: 10px; color: var(--ink-soft); }
+  .ctp-field input { width: 110px; }
+  .ctp-save { white-space: nowrap; }
+  .company-retainer-badge {
+    font-size: 11px; color: #2d6a4a; background: #eef4f1;
+    border: 1px solid #cfe0d8; border-radius: 12px; padding: 3px 10px; margin-left: 4px;
+  }
+  /* Client pricing (compact inline) */
+  .client-price-inline {
+    display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    margin-top: 10px; font-size: 12px; color: var(--ink-soft);
+    background: #fbf7ee; border: 1px solid #ecdcae; border-radius: 8px; padding: 5px 12px;
+  }
+  .client-price-inline .cpi-total { font-weight: 700; color: var(--ink); }
+  .client-price-inline.covered { background: #eef4f1; border-color: #cfe0d8; color: #2d6a4a; font-style: italic; }
   .client-doc-chip {
     display: inline-block; margin-top: 10px;
     font-family: var(--font-sans); font-size: 12px; color: var(--navy);
@@ -3987,17 +3996,20 @@
           `</div>`;
       }
 
-      // Pricing breakdown (read-only for the client), shown if any pricing set.
+      // Pricing (read-only). Recurring compliance covered by the company's
+      // annual retainer shows "Included in retainer" instead of a fee.
       let pricingBlock = '';
-      if (task.service_fee != null || task.reimbursement != null || task.discount != null) {
-        const f = Number(task.service_fee || 0), r = Number(task.reimbursement || 0), d = Number(task.discount || 0);
-        const money = n => 'PKR ' + Number(n || 0).toLocaleString('en-PK');
-        pricingBlock = `<div class="client-price-block">
-          <div class="client-price-row"><span>Service fee</span><span>${money(f)}</span></div>
-          <div class="client-price-row"><span>Reimbursement</span><span>${money(r)}</span></div>
-          ${d ? `<div class="client-price-row discount"><span>Discount</span><span>− ${money(d)}</span></div>` : ''}
-          <div class="client-price-row total"><span>Total</span><span>${money(f + r - d)}</span></div>
-        </div>`;
+      const cIsRecurringCompliance = task.is_compliance && task.recurrence && task.recurrence !== 'none';
+      const cCompany = (clientCompanies || []).find(c => c.id === task.company_id);
+      const cRetainer = cCompany && cCompany.annual_retainer != null ? Number(cCompany.annual_retainer) : null;
+      const money = n => 'PKR ' + Number(n || 0).toLocaleString('en-PK');
+      if (cIsRecurringCompliance && cRetainer && cRetainer > 0) {
+        pricingBlock = `<div class="client-price-inline covered">Included in your annual retainer</div>`;
+      } else if (task.service_fee != null || task.reimbursement != null) {
+        const f = Number(task.service_fee || 0), r = Number(task.reimbursement || 0);
+        pricingBlock = `<div class="client-price-inline">
+            <span>Fee ${money(f)}</span>${r ? `<span>+ reimb. ${money(r)}</span>` : ''}<span class="cpi-total">= ${money(f + r)}</span>
+          </div>`;
       }
 
       html += `
@@ -4680,7 +4692,8 @@
       <select class="company-select" onchange="cdrawerSwitchCompany(this.value)">${opts}</select>
       <button class="btn-ghost btn-row" onclick="cdrawerEditCompany()">Edit</button>
       <button class="btn-ghost btn-row" onclick="cdrawerDeleteCompany()">Delete</button>
-      <button class="btn-ghost btn-row" onclick="cdrawerAddCompany()">+ Add company</button>`;
+      <button class="btn-ghost btn-row" onclick="cdrawerAddCompany()">+ Add company</button>
+      ${(() => { const co = cdrawerCompanies.find(c => c.id === cdrawerCurrentCompanyId); return (co && co.annual_retainer != null && Number(co.annual_retainer) > 0) ? `<span class="company-retainer-badge" title="Annual compliance retainer">Retainer: PKR ${Number(co.annual_retainer).toLocaleString('en-PK')}/yr</span>` : ''; })()}`;
     populateFormCompanySelects();
   }
 
@@ -4744,13 +4757,19 @@
     if (!trimmed) { alert('Company name is required.'); return; }
     const type = prompt('Business type (optional):', co.business_type || '');
     if (type === null) return;
+    const retIn = prompt('Annual compliance retainer in PKR (leave blank if none).\nWhen set, all recurring compliance for this company is covered by this one price and individual task fees are hidden.', co.annual_retainer != null ? co.annual_retainer : '');
+    if (retIn === null) return;
+    const retTrim = retIn.trim();
+    const retainer = retTrim === '' ? null : Number(retTrim);
+    if (retainer != null && (isNaN(retainer) || retainer < 0)) { alert('Retainer must be a number.'); return; }
     const { data, error } = await sb.from('curator_companies')
-      .update({ name: trimmed, business_type: type.trim() || null })
+      .update({ name: trimmed, business_type: type.trim() || null, annual_retainer: retainer })
       .eq('id', co.id).select().single();
     if (error) { alert('Could not update company: ' + error.message); return; }
     const idx = cdrawerCompanies.findIndex(c => c.id === co.id);
     if (idx >= 0) cdrawerCompanies[idx] = data;
     renderCdrawerCompanyBar();
+    renderCdrawerTasks();
   };
 
   window.cdrawerDeleteCompany = async function () {
@@ -4941,24 +4960,29 @@
          </div>` +
         `</div>`;
 
-      // Pricing: service fee + reimbursement - discount = total.
-      const hasPricing = task.service_fee != null || task.reimbursement != null || task.discount != null;
-      const pFee = Number(task.service_fee || 0), pReim = Number(task.reimbursement || 0), pDisc = Number(task.discount || 0);
-      const pTotal = pFee + pReim - pDisc;
+      // Pricing: service fee + reimbursement (no discount). Recurring compliance
+      // is covered by the company's annual retainer when set, so it hides pricing.
+      const isRecurringCompliance = task.is_compliance && task.recurrence && task.recurrence !== 'none';
+      const taskCompany = (cdrawerCompanies || []).find(c => c.id === task.company_id);
+      const companyRetainer = taskCompany && taskCompany.annual_retainer != null ? Number(taskCompany.annual_retainer) : null;
+      const coveredByRetainer = isRecurringCompliance && companyRetainer && companyRetainer > 0;
       const money = n => 'PKR ' + Number(n || 0).toLocaleString('en-PK');
-      const priceChip = `<button class="ctask-price-chip" onclick="cdrawerToggleTaskPrice('${task.id}', this)">${hasPricing ? money(pTotal) + ' total' : '＋ Add pricing'}</button>`;
-      const priceRegion = `<div class="ctask-price" id="ctaskPrice-${task.id}" style="display:none;">
-          <div class="ctp-grid">
-            <label class="ctp-field"><span>Service fee</span><input type="number" class="field-input" id="ctpFee-${task.id}" value="${task.service_fee != null ? task.service_fee : ''}" placeholder="0"></label>
-            <label class="ctp-field"><span>Reimbursement</span><input type="number" class="field-input" id="ctpReim-${task.id}" value="${task.reimbursement != null ? task.reimbursement : ''}" placeholder="0"></label>
-            <label class="ctp-field"><span>Discount</span><input type="number" class="field-input" id="ctpDisc-${task.id}" value="${task.discount != null ? task.discount : ''}" placeholder="0"></label>
-          </div>
-          <div class="ctp-foot">
-            <span class="ctp-total">Total: <strong>${money(pTotal)}</strong></span>
-            <button class="btn-ghost btn-row" onclick="cdrawerSaveTaskPrice('${task.id}')">Save pricing</button>
-          </div>
-          <div class="ctp-hint">Total = service fee + reimbursement − discount. Both you and the client see this.</div>
-        </div>`;
+
+      let priceChip = '', priceRegion = '';
+      if (coveredByRetainer) {
+        priceChip = `<span class="ctask-price-chip covered" title="Covered by the annual retainer">Included in retainer</span>`;
+      } else {
+        const hasPricing = task.service_fee != null || task.reimbursement != null;
+        const pTotal = Number(task.service_fee || 0) + Number(task.reimbursement || 0);
+        priceChip = `<button class="ctask-price-chip" onclick="cdrawerToggleTaskPrice('${task.id}', this)">${hasPricing ? money(pTotal) : '＋ Fee'}</button>`;
+        priceRegion = `<div class="ctask-price" id="ctaskPrice-${task.id}" style="display:none;">
+            <div class="ctp-grid">
+              <label class="ctp-field"><span>Service fee</span><input type="number" class="field-input" id="ctpFee-${task.id}" value="${task.service_fee != null ? task.service_fee : ''}" placeholder="0"></label>
+              <label class="ctp-field"><span>Reimbursement</span><input type="number" class="field-input" id="ctpReim-${task.id}" value="${task.reimbursement != null ? task.reimbursement : ''}" placeholder="0"></label>
+              <button class="btn-ghost btn-row ctp-save" onclick="cdrawerSaveTaskPrice('${task.id}')">Save</button>
+            </div>
+          </div>`;
+      }
 
       return `
         <div class="ctask-row ${isDone ? 'done' : ''}" data-task-id="${task.id}">
@@ -4967,9 +4991,7 @@
             <span class="ctask-title">${catBadge}${escapeHtml(task.title)}${recHint}${flag}</span>
             ${task.description ? `<span class="ctask-desc">${escapeHtml(task.description)}</span>` : ''}
             ${progressChips}
-            ${docsChip}
-            ${qChip}
-            ${priceChip}
+            <span class="ctask-chiprow">${docsChip}${qChip}${priceChip}</span>
             ${docsRegion}
             ${qRegion}
             ${priceRegion}
@@ -5205,9 +5227,8 @@
     const numOrNull = id => { const v = $(id).value.trim(); return v === '' ? null : Number(v); };
     const fee = numOrNull('ctpFee-' + taskId);
     const reim = numOrNull('ctpReim-' + taskId);
-    const disc = numOrNull('ctpDisc-' + taskId);
     const { data, error } = await sb.from('curator_tasks')
-      .update({ service_fee: fee, reimbursement: reim, discount: disc })
+      .update({ service_fee: fee, reimbursement: reim })
       .eq('id', taskId).select().single();
     if (error) { alert('Could not save pricing: ' + error.message); return; }
     const idx = cdrawerTasksCache.findIndex(t => t.id === taskId);
