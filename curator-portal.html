@@ -318,6 +318,27 @@
   }
   .client-q-item.answered { opacity: 0.85; }
   .client-q-tick { color: #2d7a43; font-weight: 700; }
+  /* Advisor pricing editor */
+  .ctask-price-chip {
+    display: inline-block; margin-top: 7px; margin-left: 6px;
+    font-family: var(--font-sans); font-size: 11px; color: #6b4e00;
+    background: #fbf3dd; border: 1px solid #ecdcae; border-radius: 12px;
+    padding: 2px 10px; cursor: pointer;
+  }
+  .ctask-price-chip:hover { border-color: var(--gold); }
+  .ctask-price-chip.open { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+  .ctask-price { margin-top: 8px; border-left: 2px solid #ecdcae; padding-left: 10px; }
+  .ctp-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ctp-field { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--ink-soft); flex: 1; min-width: 90px; }
+  .ctp-field input { width: 100%; }
+  .ctp-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; gap: 8px; }
+  .ctp-total { font-size: 13px; color: var(--ink); }
+  .ctp-hint { font-size: 10px; color: var(--ink-faint); margin-top: 4px; font-style: italic; }
+  /* Client pricing breakdown (read-only) */
+  .client-price-block { margin-top: 12px; background: #fbf7ee; border: 1px solid #ecdcae; border-radius: 8px; padding: 10px 14px; }
+  .client-price-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-soft); padding: 3px 0; }
+  .client-price-row.discount span:last-child { color: #2d7a43; }
+  .client-price-row.total { border-top: 1px solid #ecdcae; margin-top: 4px; padding-top: 7px; font-weight: 700; color: var(--ink); font-size: 14px; }
   .client-doc-chip {
     display: inline-block; margin-top: 10px;
     font-family: var(--font-sans); font-size: 12px; color: var(--navy);
@@ -434,6 +455,18 @@
 
   /* ─── Notification bell (client topbar) ─── */
   .nb-wrap { position: relative; display: inline-flex; }
+  .client-company-bar {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .client-co-chip {
+    font-family: var(--font-sans); font-size: 13px; color: var(--ink-soft);
+    background: var(--paper); border: 1px solid var(--line); border-radius: 18px;
+    padding: 6px 16px; cursor: pointer;
+  }
+  .client-co-chip:hover { border-color: var(--gold); }
+  .client-co-chip.active { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+
+  /* ─── Notification bell (client topbar) ─── */
   .nb-bell {
     width: 34px; height: 34px;
     display: inline-flex; align-items: center; justify-content: center;
@@ -1993,6 +2026,7 @@
           <h1 class="pane-title">Tasks</h1>
           <p class="pane-sub">Things your advisor has asked you to do. Tick them off as you go.</p>
         </div>
+        <div class="client-company-bar" id="clientCompanyBar" style="display:none;"></div>
         <div class="tasks-filterbar" id="clientTasksFilterBar">
           <button class="tasks-filter active" data-filter="all"        onclick="setClientTasksFilter('all')">All</button>
           <button class="tasks-filter"        data-filter="compliance" onclick="setClientTasksFilter('compliance')">Compliance</button>
@@ -3732,6 +3766,8 @@
 
   let clientMessagesCache = [];
   let clientTasksCache = [];
+  let clientCompanies = [];
+  let clientCurrentCompanyId = null;
   let clientQuestionsCache = [];
   let clientDocsCache = [];
   let clientMessageChannel = null;
@@ -3792,14 +3828,67 @@
         .order('created_at', { ascending: false });
       clientDocsCache = docs || [];
     } catch (e) { /* non-fatal */ }
+    // Load the client's companies for the switcher (auto-hides if <2).
+    try {
+      const { data: cos } = await sb.from('curator_companies')
+        .select('*').eq('client_id', currentClient.id)
+        .order('is_primary', { ascending: false });
+      clientCompanies = cos || [];
+      if (clientCurrentCompanyId && !clientCompanies.some(c => c.id === clientCurrentCompanyId)) {
+        clientCurrentCompanyId = null;
+      }
+    } catch (e) { clientCompanies = []; }
+    renderClientCompanyBar();
     renderClientTasks();
     updateClientStats();
+    updateNotifCount();
+  }
+
+  function renderClientCompanyBar() {
+    const bar = $('clientCompanyBar');
+    if (!bar) return;
+    // Only show when the client has more than one company.
+    if (!clientCompanies || clientCompanies.length < 2) {
+      bar.style.display = 'none';
+      clientCurrentCompanyId = null; // single/no company → show everything
+      return;
+    }
+    bar.style.display = '';
+    let html = `<button class="client-co-chip ${!clientCurrentCompanyId ? 'active' : ''}" onclick="clientSwitchCompany('')">All companies</button>`;
+    clientCompanies.forEach(co => {
+      const label = co.name + (co.business_type ? ' · ' + co.business_type : '');
+      html += `<button class="client-co-chip ${clientCurrentCompanyId === co.id ? 'active' : ''}" onclick="clientSwitchCompany('${co.id}')">${escapeHtml(label)}</button>`;
+    });
+    bar.innerHTML = html;
+  }
+
+  window.clientSwitchCompany = function (companyId) {
+    clientCurrentCompanyId = companyId || null;
+    renderClientCompanyBar();
+    renderClientTasks();
+    if (typeof loadClientDocs === 'function') {
+      const docsPane = $('tab-documents');
+      // Re-render docs if that pane's visible; otherwise it'll pick up on open.
+    }
+    renderClientDocs();
+    updateNotifCount();
+  };
+
+  // Helper: does a task belong to the currently selected company (or all)?
+  function taskInClientCompany(t) {
+    if (!clientCurrentCompanyId) return true;
+    return t.company_id === clientCurrentCompanyId;
+  }
+  function docInClientCompany(d) {
+    if (!clientCurrentCompanyId) return true;
+    return d.company_id === clientCurrentCompanyId;
   }
 
   function renderClientTasks() {
     const container = $('clientTasksContainer');
 
     let list = clientTasksCache.slice();
+    list = list.filter(taskInClientCompany);
     if (clientTasksFilter === 'compliance') list = list.filter(t => t.is_compliance);
     if (clientTasksFilter === 'other')      list = list.filter(t => !t.is_compliance);
 
@@ -3844,7 +3933,7 @@
 
       // Action buttons appear ONLY for compliance items that are open AND not yet actioned
       let actionBlock = '';
-      if (task.is_compliance && !isDone) {
+      if (!isDone) {
         if (task.client_action === 'asked_curator') {
           actionBlock = `<div class="nb-item-status asked-curator">✓ You've asked us to handle this. We'll be in touch.</div>`;
         } else if (task.client_action === 'self_handling') {
@@ -3898,6 +3987,19 @@
           `</div>`;
       }
 
+      // Pricing breakdown (read-only for the client), shown if any pricing set.
+      let pricingBlock = '';
+      if (task.service_fee != null || task.reimbursement != null || task.discount != null) {
+        const f = Number(task.service_fee || 0), r = Number(task.reimbursement || 0), d = Number(task.discount || 0);
+        const money = n => 'PKR ' + Number(n || 0).toLocaleString('en-PK');
+        pricingBlock = `<div class="client-price-block">
+          <div class="client-price-row"><span>Service fee</span><span>${money(f)}</span></div>
+          <div class="client-price-row"><span>Reimbursement</span><span>${money(r)}</span></div>
+          ${d ? `<div class="client-price-row discount"><span>Discount</span><span>− ${money(d)}</span></div>` : ''}
+          <div class="client-price-row total"><span>Total</span><span>${money(f + r - d)}</span></div>
+        </div>`;
+      }
+
       html += `
         <div class="task-item ${isDone ? 'done' : ''}">
           <div class="task-checkbox ${isDone ? 'checked' : ''}" onclick="toggleClientTask('${task.id}')"></div>
@@ -3908,6 +4010,7 @@
             ${actionBlock}
             ${docsBlock}
             ${questionsBlock}
+            ${pricingBlock}
           </div>
           <div></div>
         </div>
@@ -4149,7 +4252,7 @@
 
     // Filter by category + subcategory; exclude pending requests (shown separately)
     let filtered = clientDocsCache.filter(d =>
-      (d.category || 'other') === currentDocCategory && d.status !== 'requested');
+      (d.category || 'other') === currentDocCategory && d.status !== 'requested' && docInClientCompany(d));
     if (currentDocSubcategory) {
       filtered = filtered.filter(d => d.subcategory === currentDocSubcategory);
     }
@@ -4838,6 +4941,25 @@
          </div>` +
         `</div>`;
 
+      // Pricing: service fee + reimbursement - discount = total.
+      const hasPricing = task.service_fee != null || task.reimbursement != null || task.discount != null;
+      const pFee = Number(task.service_fee || 0), pReim = Number(task.reimbursement || 0), pDisc = Number(task.discount || 0);
+      const pTotal = pFee + pReim - pDisc;
+      const money = n => 'PKR ' + Number(n || 0).toLocaleString('en-PK');
+      const priceChip = `<button class="ctask-price-chip" onclick="cdrawerToggleTaskPrice('${task.id}', this)">${hasPricing ? money(pTotal) + ' total' : '＋ Add pricing'}</button>`;
+      const priceRegion = `<div class="ctask-price" id="ctaskPrice-${task.id}" style="display:none;">
+          <div class="ctp-grid">
+            <label class="ctp-field"><span>Service fee</span><input type="number" class="field-input" id="ctpFee-${task.id}" value="${task.service_fee != null ? task.service_fee : ''}" placeholder="0"></label>
+            <label class="ctp-field"><span>Reimbursement</span><input type="number" class="field-input" id="ctpReim-${task.id}" value="${task.reimbursement != null ? task.reimbursement : ''}" placeholder="0"></label>
+            <label class="ctp-field"><span>Discount</span><input type="number" class="field-input" id="ctpDisc-${task.id}" value="${task.discount != null ? task.discount : ''}" placeholder="0"></label>
+          </div>
+          <div class="ctp-foot">
+            <span class="ctp-total">Total: <strong>${money(pTotal)}</strong></span>
+            <button class="btn-ghost btn-row" onclick="cdrawerSaveTaskPrice('${task.id}')">Save pricing</button>
+          </div>
+          <div class="ctp-hint">Total = service fee + reimbursement − discount. Both you and the client see this.</div>
+        </div>`;
+
       return `
         <div class="ctask-row ${isDone ? 'done' : ''}" data-task-id="${task.id}">
           <div class="task-checkbox ${isDone ? 'checked' : ''}" onclick="cdrawerToggleTask('${task.id}')"></div>
@@ -4847,8 +4969,10 @@
             ${progressChips}
             ${docsChip}
             ${qChip}
+            ${priceChip}
             ${docsRegion}
             ${qRegion}
+            ${priceRegion}
           </div>
           ${dueBadge}
           <button class="ctask-del" onclick="cdrawerDeleteTask('${task.id}')" title="Delete">Delete</button>
@@ -5067,6 +5191,29 @@
     if (btn) btn.classList.toggle('open', !showing);
     // On open, if empty, look for reusable questions from other clients.
     if (!showing) cdrawerCheckReuse(taskId);
+  };
+
+  window.cdrawerToggleTaskPrice = function (taskId, btn) {
+    const region = $('ctaskPrice-' + taskId);
+    if (!region) return;
+    const showing = region.style.display !== 'none';
+    region.style.display = showing ? 'none' : '';
+    if (btn) btn.classList.toggle('open', !showing);
+  };
+
+  window.cdrawerSaveTaskPrice = async function (taskId) {
+    const numOrNull = id => { const v = $(id).value.trim(); return v === '' ? null : Number(v); };
+    const fee = numOrNull('ctpFee-' + taskId);
+    const reim = numOrNull('ctpReim-' + taskId);
+    const disc = numOrNull('ctpDisc-' + taskId);
+    const { data, error } = await sb.from('curator_tasks')
+      .update({ service_fee: fee, reimbursement: reim, discount: disc })
+      .eq('id', taskId).select().single();
+    if (error) { alert('Could not save pricing: ' + error.message); return; }
+    const idx = cdrawerTasksCache.findIndex(t => t.id === taskId);
+    if (idx >= 0) cdrawerTasksCache[idx] = data;
+    renderCdrawerTasks();
+    setTimeout(() => { const r = $('ctaskPrice-' + taskId); if (r) r.style.display = ''; }, 0);
   };
 
   // Look for questions asked on ANOTHER client's task with the same title,
@@ -5653,13 +5800,35 @@
       && t.due_date
       && daysUntil(t.due_date) !== null
       && daysUntil(t.due_date) <= 30
+      && taskInClientCompany(t)
     ).sort((a, b) => (a.due_date < b.due_date ? -1 : 1));
+  }
+
+  // Questions the advisor asked that the client hasn't answered yet.
+  function unansweredNotifQuestions() {
+    const answerableTaskIds = new Set(
+      clientTasksCache.filter(t => t.status !== 'completed' && taskInClientCompany(t)).map(t => t.id)
+    );
+    return (clientQuestionsCache || []).filter(q =>
+      answerableTaskIds.has(q.task_id) && (!q.answer || !q.answer.trim())
+    );
+  }
+
+  // Documents the advisor requested that the client hasn't uploaded yet.
+  function requestedNotifDocs() {
+    return (clientDocsCache || []).filter(d =>
+      d.status === 'requested' && docInClientCompany(d)
+    );
+  }
+
+  function totalNotifCount() {
+    return activeNotifTasks().length + unansweredNotifQuestions().length + requestedNotifDocs().length;
   }
 
   function updateNotifCount() {
     const el = $('notifCount');
     if (!el) return;
-    const n = activeNotifTasks().length;
+    const n = totalNotifCount();
     el.textContent = n > 99 ? '99+' : String(n);
     el.classList.toggle('zero', n === 0);
   }
@@ -5668,19 +5837,29 @@
     const body = $('notifDropdownBody');
     const meta = $('notifDropdownMeta');
     if (!body) return;
-    const items = activeNotifTasks();
-    if (meta) meta.textContent = items.length === 0 ? '' : `${items.length} need${items.length === 1 ? 's' : ''} attention`;
+    const tasks = activeNotifTasks();
+    const questions = unansweredNotifQuestions();
+    const reqDocs = requestedNotifDocs();
+    const total = tasks.length + questions.length + reqDocs.length;
+    if (meta) meta.textContent = total === 0 ? '' : `${total} need${total === 1 ? 's' : ''} attention`;
 
-    if (items.length === 0) {
+    if (total === 0) {
       body.innerHTML = `
         <div class="nb-empty">
           <p class="nb-empty-title">Nothing on the horizon.</p>
-          <p>You're all caught up on compliance.</p>
+          <p>You're all caught up.</p>
         </div>`;
       return;
     }
+
+    // Map task_id → title for question context.
+    const taskTitle = {};
+    clientTasksCache.forEach(t => { taskTitle[t.id] = t.title; });
+
     let html = '';
-    items.forEach(t => {
+
+    // 1) Upcoming compliance deadlines
+    tasks.forEach(t => {
       const bucket = dueBucket(t.due_date);
       html += `
         <div class="nb-item">
@@ -5695,8 +5874,43 @@
           </div>
         </div>`;
     });
+
+    // 2) Unanswered questions
+    questions.forEach(q => {
+      html += `
+        <div class="nb-item">
+          <div class="nb-item-cat">Question · ${escapeHtml(taskTitle[q.task_id] || 'Task')}</div>
+          <div class="nb-item-head">
+            <div class="nb-item-title">${escapeHtml(q.question)}</div>
+            <span class="nb-item-due due-soon">Needs answer</span>
+          </div>
+          <div class="nb-item-actions">
+            <button class="nb-act-btn primary" onclick="goToTasksTab(); closeNotifDropdown();">Answer in Tasks</button>
+          </div>
+        </div>`;
+    });
+
+    // 3) Requested documents
+    reqDocs.forEach(d => {
+      html += `
+        <div class="nb-item">
+          <div class="nb-item-cat">Document requested${d.category ? ' · ' + escapeHtml(categoryLabel(d.category)) : ''}</div>
+          <div class="nb-item-head">
+            <div class="nb-item-title">${escapeHtml(d.requested_label || d.filename || 'Document')}</div>
+            <span class="nb-item-due due-soon">Please upload</span>
+          </div>
+          <div class="nb-item-actions">
+            <button class="nb-act-btn primary" onclick="goToDocsTab(); closeNotifDropdown();">Upload in Documents</button>
+          </div>
+        </div>`;
+    });
+
     body.innerHTML = html;
   }
+
+  // Small helpers to jump the client to the right tab from a notification.
+  window.goToTasksTab = function () { if (typeof switchTab === 'function') switchTab('tasks'); };
+  window.goToDocsTab = function () { if (typeof switchTab === 'function') switchTab('documents'); };
 
   window.toggleNotifDropdown = function (e) {
     if (e) e.stopPropagation();
