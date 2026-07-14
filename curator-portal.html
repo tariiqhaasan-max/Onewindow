@@ -331,6 +331,17 @@
   .ctask-price-chip:hover { border-color: var(--gold); }
   .ctask-price-chip.open { background: var(--navy); color: var(--cream); border-color: var(--navy); }
   .ctask-price-chip.covered { background: #eef4f1; color: #2d6a4a; border-color: #cfe0d8; cursor: default; }
+  .ctask-due-chip {
+    display: inline-block;
+    font-family: var(--font-sans); font-size: 11px; color: #234b5c;
+    background: #eef2f6; border: 1px solid #d3ddea; border-radius: 12px;
+    padding: 2px 10px; cursor: pointer;
+  }
+  .ctask-due-chip:hover { border-color: var(--gold); }
+  .ctask-due-chip.open { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+  .ctask-due-chip.unset { background: #fdecea; border-color: #f3c8c2; color: #a3372a; }
+  .ctask-duedate { margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .ctask-duedate input[type="date"] { width: 160px; }
   .ctask-price { margin-top: 8px; }
   .ctp-grid { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
   .ctp-field { display: flex; flex-direction: column; gap: 2px; font-size: 10px; color: var(--ink-soft); }
@@ -5092,6 +5103,15 @@
             ${retainerActive ? `<div class="ctp-note">Service fee is covered by the annual retainer. Reimbursement is billed to the client once a receipt is attached${taskHasReceipt ? ' (receipt attached ✓)' : ' (no receipt yet)'}.</div>` : ''}
           </div>`;
 
+      // Due-date editor (advisor). Chip shows the date, or a red "Set due date"
+      // when missing; clicking reveals an inline date picker.
+      const dueChip = isDone ? '' : `<button class="ctask-due-chip${task.due_date ? '' : ' unset'}" onclick="cdrawerToggleTaskDue('${task.id}', this)">📅 ${task.due_date ? fmtDate(task.due_date) : 'Set due date'}</button>`;
+      const dueRegion = isDone ? '' : `<div class="ctask-duedate" id="ctaskDue-${task.id}" style="display:none;">
+            <input type="date" class="field-input" id="ctaskDueInput-${task.id}" value="${task.due_date || ''}">
+            <button class="btn-ghost btn-row" onclick="cdrawerSaveTaskDue('${task.id}')">Save</button>
+            ${task.due_date ? `<button class="btn-ghost btn-row" onclick="cdrawerSaveTaskDue('${task.id}', true)">Clear</button>` : ''}
+          </div>`;
+
       return `
         <div class="ctask-row ${isDone ? 'done' : ''}" data-task-id="${task.id}">
           <div class="task-checkbox ${isDone ? 'checked' : ''}" onclick="cdrawerToggleTask('${task.id}')"></div>
@@ -5099,10 +5119,11 @@
             <span class="ctask-title">${catBadge}${escapeHtml(task.title)}${recHint}${flag}</span>
             ${task.description ? `<span class="ctask-desc">${escapeHtml(task.description)}</span>` : ''}
             ${progressChips}
-            <span class="ctask-chiprow">${docsChip}${qChip}${priceChip}</span>
+            <span class="ctask-chiprow">${dueChip}${docsChip}${qChip}${priceChip}</span>
             ${docsRegion}
             ${qRegion}
             ${priceRegion}
+            ${dueRegion}
           </div>
           ${dueBadge}
           <button class="ctask-del" onclick="cdrawerDeleteTask('${task.id}')" title="Delete">Delete</button>
@@ -5119,6 +5140,27 @@
       section('Upcoming', 'is-upcoming', buckets.upcoming) +
       section('Completed', 'is-completed', buckets.completed);
   }
+  // Advisor: reveal/hide the inline due-date picker for a task.
+  window.cdrawerToggleTaskDue = function (taskId, btn) {
+    const region = document.getElementById('ctaskDue-' + taskId);
+    if (!region) return;
+    const isOpen = region.style.display !== 'none';
+    region.style.display = isOpen ? 'none' : 'flex';
+    if (btn) btn.classList.toggle('open', !isOpen);
+    if (!isOpen) { const inp = document.getElementById('ctaskDueInput-' + taskId); if (inp) inp.focus(); }
+  };
+  // Advisor: save (or clear) a task's due date, then re-bucket the list.
+  window.cdrawerSaveTaskDue = async function (taskId, clear) {
+    const inp = document.getElementById('ctaskDueInput-' + taskId);
+    const val = clear ? null : ((inp && inp.value) ? inp.value : null);
+    const { data, error } = await sb.from('curator_tasks')
+      .update({ due_date: val }).eq('id', taskId).select().single();
+    if (error) { alert('Could not save due date: ' + error.message); return; }
+    const idx = cdrawerTasksCache.findIndex(t => t.id === taskId);
+    if (idx >= 0) cdrawerTasksCache[idx] = data;
+    renderCdrawerTasks();
+  };
+
   window.cdrawerCreateTask = async function () {
     if (!cdrawerCurrentClient) return;
     const title = $('cdrawerNewTaskTitle').value.trim();
