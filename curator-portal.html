@@ -331,17 +331,6 @@
   .ctask-price-chip:hover { border-color: var(--gold); }
   .ctask-price-chip.open { background: var(--navy); color: var(--cream); border-color: var(--navy); }
   .ctask-price-chip.covered { background: #eef4f1; color: #2d6a4a; border-color: #cfe0d8; cursor: default; }
-  .ctask-due-chip {
-    display: inline-block;
-    font-family: var(--font-sans); font-size: 11px; color: #234b5c;
-    background: #eef2f6; border: 1px solid #d3ddea; border-radius: 12px;
-    padding: 2px 10px; cursor: pointer;
-  }
-  .ctask-due-chip:hover { border-color: var(--gold); }
-  .ctask-due-chip.open { background: var(--navy); color: var(--cream); border-color: var(--navy); }
-  .ctask-due-chip.unset { background: #fdecea; border-color: #f3c8c2; color: #a3372a; }
-  .ctask-duedate { margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .ctask-duedate input[type="date"] { width: 160px; }
   .ctask-price { margin-top: 8px; }
   .ctp-grid { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
   .ctp-field { display: flex; flex-direction: column; gap: 2px; font-size: 10px; color: var(--ink-soft); }
@@ -384,6 +373,23 @@
   }
   .client-retainer-btn.ghost:hover { background: rgba(31,58,95,0.06); }
   .client-retainer-choices { display: flex; gap: 8px; flex-wrap: wrap; }
+  /* Client requests (intake) */
+  .req-compose { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .req-compose textarea { width: 100%; resize: vertical; }
+  .req-item { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin-top: 10px; }
+  .req-item-body { font-size: 14px; color: var(--ink); white-space: pre-wrap; }
+  .req-item-meta { font-size: 11px; color: var(--ink-faint); margin-top: 6px; display: flex; align-items: center; gap: 8px; }
+  .req-status { font-size: 10px; font-weight: 700; letter-spacing: .4px; padding: 2px 8px; border-radius: 10px; }
+  .req-status.pending { background: #fbf3dd; color: #8a6d1f; }
+  .req-status.converted { background: #eef4f1; color: #2d6a4a; }
+  .req-status.dismissed { background: #f0eee9; color: var(--ink-faint); }
+  .req-item.req-converted { opacity: .75; }
+  /* Advisor requests panel */
+  .cdreq-item { border: 1px solid #ecdcae; background: #fbf7ee; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .cdreq-body { font-size: 14px; color: var(--ink); white-space: pre-wrap; }
+  .cdreq-meta { font-size: 11px; color: var(--ink-faint); margin: 6px 0 10px; }
+  .cdreq-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .cdreq-actions .danger { color: var(--rose, #b8503a); }
   .client-retainer-banner.accepted { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
   .client-doc-chip {
     display: inline-block; margin-top: 10px;
@@ -2118,6 +2124,22 @@
         </div>
       </section>
 
+      <section class="tab-pane" id="tab-requests" data-role="client">
+        <div class="pane-header">
+          <p class="pane-eyebrow">Workspace</p>
+          <h2 class="pane-title">My requests</h2>
+          <p class="pane-desc">Tell us what you need. Write it here and we'll turn it into a tracked task and take it from there.</p>
+        </div>
+        <div class="req-compose">
+          <select class="field-input" id="reqCompanySelect" style="margin-bottom:8px; display:none;"></select>
+          <textarea class="field-input" id="reqBody" rows="3" placeholder="e.g. I need to register for sales tax, or please help me file last year's return…"></textarea>
+          <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+            <button class="nb-act-btn primary" onclick="clientSubmitRequest()">Send request</button>
+          </div>
+        </div>
+        <div id="clientRequestsList"></div>
+      </section>
+
       <section class="tab-pane" id="tab-messages" data-role="client">
         <div class="pane-header">
           <p class="pane-eyebrow">Workspace</p>
@@ -2325,10 +2347,12 @@
       </div>
       <div>
         <label class="field-label">Applies to</label>
-        <select class="field-input" id="ntApplies">
+        <select class="field-input" id="ntApplies" onchange="cdrawerAppliesChange()">
+          <option value="all">All clients</option>
           <option value="private_ltd">Private Ltd</option>
           <option value="section_42">Section 42 / NGO</option>
           <option value="individual">Individual / Sole / AOP</option>
+          <option value="__client__">This client only</option>
         </select>
       </div>
       <div>
@@ -2346,6 +2370,7 @@
     </div>
     <label class="field-label">Reminder days before (comma-separated)</label>
     <input class="field-input" id="ntNotify" type="text" placeholder="e.g. 14, 7, 1">
+    <div class="form-msg" id="ntScopeHint" style="display:none;"></div>
     <div class="newtype-actions">
       <button class="btn-ghost" onclick="cdrawerCloseNewType()">Cancel</button>
       <button class="btn-primary" id="ntSaveBtn" onclick="cdrawerSaveNewType()">Add type</button>
@@ -2483,6 +2508,8 @@
       if (name === 'leads' && isSuperAdmin && leadsCache.length === 0) loadLeads();
       if (name === 'clients' && clientsCache.length === 0) loadClients();
       if (name === 'advisors' && isSuperAdmin) loadAdvisors();
+    } else {
+      if (name === 'requests') loadClientRequests();
     }
   };
 
@@ -2520,6 +2547,7 @@
           <div class="app-nav-item active" data-tab="home"      onclick="switchTab('home')">Home</div>
           <div class="app-nav-item"        data-tab="tasks"     onclick="switchTab('tasks')">Tasks</div>
           <div class="app-nav-item"        data-tab="documents" onclick="switchTab('documents')">Documents</div>
+          <div class="app-nav-item"        data-tab="requests"  onclick="switchTab('requests')">My requests</div>
           <div class="app-nav-item"        data-tab="messages"  onclick="switchTab('messages')">Messages</div>
           <div class="app-nav-item"        data-tab="profile"   onclick="switchTab('profile')">Profile</div>
         `;
@@ -3695,6 +3723,11 @@
         </div>
       </div>
 
+      <div class="drawer-section" id="cdrawerRequestsSection" style="display:none;">
+        <h4 class="drawer-section-title">Client requests</h4>
+        <div id="cdrawerRequestsList"></div>
+      </div>
+
       <div class="drawer-section">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
           <h4 class="drawer-section-title" style="margin:0;">Client workspace</h4>
@@ -3969,7 +4002,64 @@
     renderClientTasks();
   };
 
-  window.clientSwitchCompany = function (companyId) {
+  let clientRequestsCache = [];
+
+  async function loadClientRequests() {
+    if (!currentClient) return;
+    // Populate company dropdown (only if 2+ companies).
+    const sel = $('reqCompanySelect');
+    if (sel) {
+      if (clientCompanies && clientCompanies.length >= 2) {
+        sel.style.display = '';
+        sel.innerHTML = `<option value="">General (no specific company)</option>` +
+          clientCompanies.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+      } else {
+        sel.style.display = 'none';
+      }
+    }
+    const { data, error } = await sb.from('curator_client_requests')
+      .select('*').eq('client_id', currentClient.id)
+      .order('created_at', { ascending: false });
+    if (!error) clientRequestsCache = data || [];
+    renderClientRequests();
+  }
+
+  function renderClientRequests() {
+    const list = $('clientRequestsList');
+    if (!list) return;
+    if (!clientRequestsCache.length) {
+      list.innerHTML = `<div class="placeholder" style="margin-top:16px;"><h4 class="placeholder-title">No requests yet.</h4>Anything you need, just write it above.</div>`;
+      return;
+    }
+    const statusLabel = { pending: 'Pending', converted: 'Added to your tasks', dismissed: 'Closed' };
+    list.innerHTML = clientRequestsCache.map(r => {
+      const co = (clientCompanies || []).find(c => c.id === r.company_id);
+      return `<div class="req-item req-${r.status}">
+          <div class="req-item-body">${escapeHtml(r.body)}</div>
+          <div class="req-item-meta">
+            ${co ? escapeHtml(co.name) + ' · ' : ''}${timeAgo(r.created_at)}
+            <span class="req-status ${r.status}">${statusLabel[r.status] || r.status}</span>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  window.clientSubmitRequest = async function () {
+    const body = $('reqBody').value.trim();
+    if (!body) { alert('Please write your request first.'); return; }
+    const companyId = ($('reqCompanySelect') && $('reqCompanySelect').value) || null;
+    const { data, error } = await sb.from('curator_client_requests').insert({
+      client_id: currentClient.id,
+      company_id: companyId,
+      body,
+      status: 'pending',
+      created_by: currentUser.id
+    }).select().single();
+    if (error) { alert('Could not send: ' + error.message); return; }
+    clientRequestsCache.unshift(data);
+    $('reqBody').value = '';
+    renderClientRequests();
+  };
     clientCurrentCompanyId = companyId || null;
     renderClientCompanyBar();
     renderClientTasks();
@@ -4727,6 +4817,7 @@
     loadCdrawerCompanies().then(() => {
       loadCdrawerTasks();
     });
+    loadCdrawerRequests();
     // Show the "+ New type" catalog button only for super admins.
     const _ntBtn = $('cdrawerNewTypeBtn');
     if (_ntBtn) _ntBtn.style.display = isSuperAdmin ? '' : 'none';
@@ -5103,15 +5194,6 @@
             ${retainerActive ? `<div class="ctp-note">Service fee is covered by the annual retainer. Reimbursement is billed to the client once a receipt is attached${taskHasReceipt ? ' (receipt attached ✓)' : ' (no receipt yet)'}.</div>` : ''}
           </div>`;
 
-      // Due-date editor (advisor). Chip shows the date, or a red "Set due date"
-      // when missing; clicking reveals an inline date picker.
-      const dueChip = isDone ? '' : `<button class="ctask-due-chip${task.due_date ? '' : ' unset'}" onclick="cdrawerToggleTaskDue('${task.id}', this)">📅 ${task.due_date ? fmtDate(task.due_date) : 'Set due date'}</button>`;
-      const dueRegion = isDone ? '' : `<div class="ctask-duedate" id="ctaskDue-${task.id}" style="display:none;">
-            <input type="date" class="field-input" id="ctaskDueInput-${task.id}" value="${task.due_date || ''}">
-            <button class="btn-ghost btn-row" onclick="cdrawerSaveTaskDue('${task.id}')">Save</button>
-            ${task.due_date ? `<button class="btn-ghost btn-row" onclick="cdrawerSaveTaskDue('${task.id}', true)">Clear</button>` : ''}
-          </div>`;
-
       return `
         <div class="ctask-row ${isDone ? 'done' : ''}" data-task-id="${task.id}">
           <div class="task-checkbox ${isDone ? 'checked' : ''}" onclick="cdrawerToggleTask('${task.id}')"></div>
@@ -5119,11 +5201,10 @@
             <span class="ctask-title">${catBadge}${escapeHtml(task.title)}${recHint}${flag}</span>
             ${task.description ? `<span class="ctask-desc">${escapeHtml(task.description)}</span>` : ''}
             ${progressChips}
-            <span class="ctask-chiprow">${dueChip}${docsChip}${qChip}${priceChip}</span>
+            <span class="ctask-chiprow">${docsChip}${qChip}${priceChip}</span>
             ${docsRegion}
             ${qRegion}
             ${priceRegion}
-            ${dueRegion}
           </div>
           ${dueBadge}
           <button class="ctask-del" onclick="cdrawerDeleteTask('${task.id}')" title="Delete">Delete</button>
@@ -5140,25 +5221,81 @@
       section('Upcoming', 'is-upcoming', buckets.upcoming) +
       section('Completed', 'is-completed', buckets.completed);
   }
-  // Advisor: reveal/hide the inline due-date picker for a task.
-  window.cdrawerToggleTaskDue = function (taskId, btn) {
-    const region = document.getElementById('ctaskDue-' + taskId);
-    if (!region) return;
-    const isOpen = region.style.display !== 'none';
-    region.style.display = isOpen ? 'none' : 'flex';
-    if (btn) btn.classList.toggle('open', !isOpen);
-    if (!isOpen) { const inp = document.getElementById('ctaskDueInput-' + taskId); if (inp) inp.focus(); }
-  };
-  // Advisor: save (or clear) a task's due date, then re-bucket the list.
-  window.cdrawerSaveTaskDue = async function (taskId, clear) {
-    const inp = document.getElementById('ctaskDueInput-' + taskId);
-    const val = clear ? null : ((inp && inp.value) ? inp.value : null);
-    const { data, error } = await sb.from('curator_tasks')
-      .update({ due_date: val }).eq('id', taskId).select().single();
-    if (error) { alert('Could not save due date: ' + error.message); return; }
-    const idx = cdrawerTasksCache.findIndex(t => t.id === taskId);
-    if (idx >= 0) cdrawerTasksCache[idx] = data;
+  let cdrawerRequestsCache = [];
+
+  async function loadCdrawerRequests() {
+    const section = $('cdrawerRequestsSection');
+    if (!cdrawerCurrentClient) { if (section) section.style.display = 'none'; return; }
+    const { data, error } = await sb.from('curator_client_requests')
+      .select('*').eq('client_id', cdrawerCurrentClient.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    cdrawerRequestsCache = error ? [] : (data || []);
+    renderCdrawerRequests();
+  }
+
+  function renderCdrawerRequests() {
+    const section = $('cdrawerRequestsSection');
+    const list = $('cdrawerRequestsList');
+    if (!section || !list) return;
+    if (!cdrawerRequestsCache.length) { section.style.display = 'none'; return; }
+    section.style.display = '';
+    list.innerHTML = cdrawerRequestsCache.map(r => {
+      const co = (cdrawerCompanies || []).find(c => c.id === r.company_id);
+      return `<div class="cdreq-item">
+          <div class="cdreq-body">${escapeHtml(r.body)}</div>
+          <div class="cdreq-meta">${co ? escapeHtml(co.name) + ' · ' : ''}${timeAgo(r.created_at)}</div>
+          <div class="cdreq-actions">
+            <button class="btn-ghost btn-row" onclick="cdrawerConvertRequest('${r.id}','compliance')">→ Compliance task</button>
+            <button class="btn-ghost btn-row" onclick="cdrawerConvertRequest('${r.id}','oneoff')">→ One-off task</button>
+            <button class="btn-ghost btn-row danger" onclick="cdrawerDismissRequest('${r.id}')">Dismiss</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  window.cdrawerConvertRequest = async function (reqId, kind) {
+    const req = cdrawerRequestsCache.find(r => r.id === reqId);
+    if (!req) return;
+    const companyId = req.company_id || cdrawerCurrentCompanyId;
+    // Use the request text as the task title (trim to a reasonable length).
+    const title = req.body.length > 120 ? req.body.slice(0, 117) + '…' : req.body;
+
+    let insert;
+    if (kind === 'compliance') {
+      insert = { client_id: cdrawerCurrentClient.id, company_id: companyId, title,
+        description: req.body.length > 120 ? req.body : null,
+        category: 'other', status: 'pending', is_compliance: true,
+        recurrence: 'none', created_by: currentUser.id };
+    } else {
+      insert = { client_id: cdrawerCurrentClient.id, company_id: companyId, title,
+        description: req.body.length > 120 ? req.body : null,
+        status: 'open', created_by: currentUser.id };
+    }
+    const { data: task, error } = await sb.from('curator_tasks').insert(insert).select().single();
+    if (error) { alert('Could not create task: ' + error.message); return; }
+
+    // Mark the request converted, link the task.
+    await sb.from('curator_client_requests')
+      .update({ status: 'converted', converted_task_id: task.id, handled_at: new Date().toISOString() })
+      .eq('id', reqId);
+
+    cdrawerRequestsCache = cdrawerRequestsCache.filter(r => r.id !== reqId);
+    if (companyId === cdrawerCurrentCompanyId) cdrawerTasksCache.push(task);
+    renderCdrawerRequests();
     renderCdrawerTasks();
+    // Notify the client their request became a task (uses existing endpoint).
+    try { notifyTaskAdded(task.id); } catch (e) {}
+  };
+
+  window.cdrawerDismissRequest = async function (reqId) {
+    if (!confirm('Dismiss this request? The client will see it as closed.')) return;
+    const { error } = await sb.from('curator_client_requests')
+      .update({ status: 'dismissed', handled_at: new Date().toISOString() })
+      .eq('id', reqId);
+    if (error) { alert('Could not dismiss: ' + error.message); return; }
+    cdrawerRequestsCache = cdrawerRequestsCache.filter(r => r.id !== reqId);
+    renderCdrawerRequests();
   };
 
   window.cdrawerCreateTask = async function () {
@@ -6120,16 +6257,19 @@
     if (!sel) return;
 
     // Determine which catalog entries apply to this client
-    let appliesFilter = ['both'];
+    let appliesFilter = ['both', 'all'];
     const bt = cdrawerCurrentClient && (cdrawerCurrentClient.business_type || '').toLowerCase();
     if (bt.includes('section 42') || bt.includes('ngo')) appliesFilter.push('section_42');
     else if (bt.includes('sole') || bt.includes('individual') || bt.includes('aop')) appliesFilter.push('individual');
     else appliesFilter.push('private_ltd');
+    const curClientId = cdrawerCurrentClient && cdrawerCurrentClient.id;
 
     // Group by category
     const groups = {};
     complianceCatalog.forEach(c => {
-      if (!appliesFilter.includes(c.applies_to)) return;
+      // Client-scoped rows show only for that client; shared rows use applies_to.
+      if (c.client_id) { if (c.client_id !== curClientId) return; }
+      else if (!appliesFilter.includes(c.applies_to)) return;
       const cat = categoryLabel(c.category);
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(c);
@@ -6240,6 +6380,21 @@
   window.cdrawerNewTypeRecChange = function () {
     $('ntAnchorWrap').style.display = ($('ntRecurrence').value === 'monthly') ? '' : 'none';
   };
+  window.cdrawerAppliesChange = function () {
+    const v = $('ntApplies').value;
+    const hint = $('ntScopeHint');
+    if (!hint) return;
+    if (v === '__client__') {
+      const nm = cdrawerCurrentClient ? (cdrawerCurrentClient.full_name || cdrawerCurrentClient.email || 'this client') : 'this client';
+      hint.textContent = 'This type will appear only for ' + nm + ', not in the shared catalog.';
+      hint.style.display = '';
+    } else if (v === 'all') {
+      hint.textContent = 'This type will appear for every client.';
+      hint.style.display = '';
+    } else {
+      hint.style.display = 'none';
+    }
+  };
   window.cdrawerSaveNewType = async function () {
     if (!isSuperAdmin) { alert('Only a super admin can add compliance types.'); return; }
     const title = $('ntTitle').value.trim();
@@ -6252,6 +6407,16 @@
     const msg = $('ntMsg');
     if (!title) { msg.textContent = 'Title is required.'; msg.className = 'form-msg error'; return; }
 
+    // Audience: "This client only" scopes to the current client; otherwise it's
+    // a shared template keyed by applies_to ('all' = every client).
+    let clientScope = null;
+    let appliesValue = applies;
+    if (applies === '__client__') {
+      if (!cdrawerCurrentClient) { msg.textContent = 'Open a client first to scope a type to them.'; msg.className = 'form-msg error'; return; }
+      clientScope = cdrawerCurrentClient.id;
+      appliesValue = 'all'; // client_id is what restricts it; applies_to is moot
+    }
+
     // Build a stable code from the title (catalog_code is used on tasks).
     const code = 'custom_' + title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40) + '_' + Date.now().toString().slice(-5);
     const btn = $('ntSaveBtn'); btn.disabled = true; btn.textContent = 'Adding…';
@@ -6261,7 +6426,8 @@
       category,
       title,
       description: desc || null,
-      applies_to: applies,
+      applies_to: appliesValue,
+      client_id: clientScope,
       default_recurrence: rec,
       default_recurrence_anchor: anchor,
       default_notify_days_before: notify.length ? notify : null,
@@ -6284,14 +6450,15 @@
     await ensureComplianceCatalogLoaded();
 
     // "Standard set" = recurring (monthly/annual) compliances that apply.
-    let appliesFilter = ['both'];
+    let appliesFilter = ['both', 'all'];
     const bt = (cdrawerCurrentClient.business_type || '').toLowerCase();
     if (bt.includes('section 42') || bt.includes('ngo')) appliesFilter.push('section_42');
     else if (bt.includes('sole') || bt.includes('individual') || bt.includes('aop')) appliesFilter.push('individual');
     else appliesFilter.push('private_ltd');
+    const curClientId2 = cdrawerCurrentClient.id;
 
     const standardItems = complianceCatalog.filter(c =>
-      appliesFilter.includes(c.applies_to)
+      ((c.client_id && c.client_id === curClientId2) || (!c.client_id && appliesFilter.includes(c.applies_to)))
       && c.default_recurrence !== 'none'
       && !c.is_event_based
     );
