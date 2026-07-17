@@ -2435,6 +2435,30 @@
         </div>
       </section>
 
+      <section class="tab-pane" id="tab-advisor-deadlines" data-role="advisor">
+        <div class="pane-header">
+          <p class="pane-eyebrow">Portfolio</p>
+          <h1 class="pane-title">Deadlines</h1>
+          <p class="pane-sub">All overdue and upcoming tasks across every client, sorted by urgency.</p>
+        </div>
+        <div style="display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
+          <select class="field-input" id="advisorDlFilterAdvisor" style="max-width:200px;" onchange="renderAdvisorPortfolioDeadlines()">
+            <option value="">All advisors</option>
+          </select>
+          <select class="field-input" id="advisorDlFilterBucket" style="max-width:200px;" onchange="renderAdvisorPortfolioDeadlines()">
+            <option value="">All urgency</option>
+            <option value="overdue">Overdue only</option>
+            <option value="tomorrow">Tomorrow</option>
+            <option value="3d">Due in 3 days</option>
+            <option value="7d">Due in 7 days</option>
+          </select>
+          <button class="btn-ghost" onclick="loadAdvisorDeadlines(true)" style="margin-left:auto;">↻ Refresh</button>
+        </div>
+        <div id="advisorDeadlinesContainer">
+          <div class="placeholder"><h4 class="placeholder-title">Loading…</h4></div>
+        </div>
+      </section>
+
 <!-- ═══════ Lead detail drawer (advisor only) ═══════ -->
 <div class="drawer-overlay" id="leadDrawerOverlay" onclick="closeLeadDrawer()"></div>
 <aside class="drawer" id="leadDrawer">
@@ -2632,6 +2656,7 @@
       if (name === 'leads' && isSuperAdmin && leadsCache.length === 0) loadLeads();
       if (name === 'clients' && clientsCache.length === 0) loadClients();
       if (name === 'advisors' && isSuperAdmin) loadAdvisors();
+      if (name === 'advisor-deadlines') loadAdvisorDeadlines();
     } else {
       if (name === 'requests') loadClientRequests();
     }
@@ -2646,16 +2671,18 @@
       if (isSuperAdmin) {
         nav.innerHTML = `
           <div class="app-nav-section">Advisor</div>
-          <div class="app-nav-item active" data-tab="leads"           onclick="switchTab('leads')">Leads</div>
-          <div class="app-nav-item"        data-tab="clients"         onclick="switchTab('clients')">Clients</div>
-          <div class="app-nav-item"        data-tab="advisors"        onclick="switchTab('advisors')">Advisors</div>
-          <div class="app-nav-item"        data-tab="advisor-profile" onclick="switchTab('advisor-profile')">Profile</div>
+          <div class="app-nav-item active" data-tab="leads"              onclick="switchTab('leads')">Leads</div>
+          <div class="app-nav-item"        data-tab="clients"            onclick="switchTab('clients')">Clients</div>
+          <div class="app-nav-item"        data-tab="advisor-deadlines"  onclick="switchTab('advisor-deadlines')">Deadlines</div>
+          <div class="app-nav-item"        data-tab="advisors"           onclick="switchTab('advisors')">Advisors</div>
+          <div class="app-nav-item"        data-tab="advisor-profile"    onclick="switchTab('advisor-profile')">Profile</div>
         `;
       } else {
         nav.innerHTML = `
           <div class="app-nav-section">Advisor</div>
-          <div class="app-nav-item active" data-tab="clients"         onclick="switchTab('clients')">Clients</div>
-          <div class="app-nav-item"        data-tab="advisor-profile" onclick="switchTab('advisor-profile')">Profile</div>
+          <div class="app-nav-item active" data-tab="clients"            onclick="switchTab('clients')">Clients</div>
+          <div class="app-nav-item"        data-tab="advisor-deadlines"  onclick="switchTab('advisor-deadlines')">Deadlines</div>
+          <div class="app-nav-item"        data-tab="advisor-profile"    onclick="switchTab('advisor-profile')">Profile</div>
         `;
       }
     } else {
@@ -7054,6 +7081,219 @@
     // instead we use the auth-success hook below to compute once and
     // then rely on realtime updates.
   }
+
+  // ════════════════════════════════════════════════════════════════════
+  // ADVISOR PORTFOLIO DEADLINES (top-level tab — all clients at once)
+  // ════════════════════════════════════════════════════════════════════
+
+  let advisorDeadlinesCache = [];   // flat array of tasks with client info embedded
+  let advisorDeadlinesLoaded = false;
+
+  async function loadAdvisorDeadlines(force) {
+    const container = $('advisorDeadlinesContainer');
+    if (!container) return;
+    if (advisorDeadlinesLoaded && !force) { renderAdvisorPortfolioDeadlines(); return; }
+
+    container.innerHTML = `<div class="placeholder"><h4 class="placeholder-title">Loading…</h4></div>`;
+
+    // Fetch all open tasks with a due date, across all clients this advisor can see.
+    // RLS already scopes this to the advisor's own clients.
+    const { data: tasks, error } = await sb
+      .from('curator_tasks')
+      .select('*, curator_clients(id, full_name, email), curator_companies(id, name)')
+      .neq('status', 'completed')
+      .not('due_date', 'is', null)
+      .order('due_date', { ascending: true });
+
+    if (error) {
+      container.innerHTML = `<div class="placeholder"><h4 class="placeholder-title">Could not load.</h4>${escapeHtml(error.message)}</div>`;
+      return;
+    }
+
+    // Keep only tasks in the 7-day window or overdue
+    advisorDeadlinesCache = (tasks || []).filter(t => {
+      const b = deadlineBucket(t.due_date);
+      return b !== null;
+    });
+
+    advisorDeadlinesLoaded = true;
+
+    // Populate advisor filter dropdown from clientsCache
+    const advisorSelect = $('advisorDlFilterAdvisor');
+    if (advisorSelect && clientsCache.length) {
+      const advisorIds = [...new Set(clientsCache.map(c => c.assigned_advisor_id).filter(Boolean))];
+      const advisorNames = {};
+      clientsCache.forEach(c => {
+        if (c.assigned_advisor_id && c.advisor_name) advisorNames[c.assigned_advisor_id] = c.advisor_name;
+      });
+      advisorSelect.innerHTML = `<option value="">All advisors</option>` +
+        advisorIds.map(id => `<option value="${id}">${escapeHtml(advisorNames[id] || id)}</option>`).join('');
+    }
+
+    // Update the nav badge
+    const overdueCount = advisorDeadlinesCache.filter(t => deadlineBucket(t.due_date) === 'overdue').length;
+    const navItem = document.querySelector('[data-tab="advisor-deadlines"]');
+    if (navItem) {
+      navItem.innerHTML = overdueCount > 0
+        ? `Deadlines <span style="background:var(--rose);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:4px;">${overdueCount}</span>`
+        : `Deadlines`;
+    }
+
+    renderAdvisorPortfolioDeadlines();
+  }
+
+  window.renderAdvisorPortfolioDeadlines = function () {
+    const container = $('advisorDeadlinesContainer');
+    if (!container) return;
+
+    const filterBucket  = ($('advisorDlFilterBucket')  || {}).value || '';
+    const filterAdvisor = ($('advisorDlFilterAdvisor') || {}).value || '';
+
+    let tasks = advisorDeadlinesCache;
+
+    if (filterBucket) tasks = tasks.filter(t => deadlineBucket(t.due_date) === filterBucket);
+    if (filterAdvisor) {
+      // match tasks whose client is assigned to this advisor
+      const clientIds = new Set(
+        clientsCache.filter(c => c.assigned_advisor_id === filterAdvisor).map(c => c.id)
+      );
+      tasks = tasks.filter(t => clientIds.has(t.client_id));
+    }
+
+    if (!tasks.length) {
+      container.innerHTML = `<div class="dl-empty"><strong>All clear.</strong>No tasks due in the next 7 days${filterBucket || filterAdvisor ? ' matching this filter' : ''}.</div>`;
+      return;
+    }
+
+    // Group by bucket
+    const groups = { overdue: [], tomorrow: [], '3d': [], '7d': [] };
+    tasks.forEach(t => { const b = deadlineBucket(t.due_date); if (b) groups[b].push(t); });
+
+    const rowHtml = (t) => {
+      const clientName = (t.curator_clients && t.curator_clients.full_name) || t.client_id;
+      const coName     = (t.curator_companies && t.curator_companies.name) || '';
+      const catLabel   = t.is_compliance ? categoryLabel(t.category) : 'Task';
+      const bucket     = deadlineBucket(t.due_date);
+      const badgeCls   = deadlineDueBadgeClass(bucket);
+      const badgeTxt   = deadlineDueBadgeText(t.due_date);
+      const rowCls     = bucket === 'overdue' ? 'is-overdue' : (bucket === 'tomorrow' ? 'is-tomorrow' : (bucket === '3d' ? 'is-3d' : ''));
+      const hasPenalty = !!(t.penalty_title || t.penalty_amount || t.penalty_notes);
+      const sub        = [clientName, coName, catLabel].filter(Boolean).join(' · ');
+
+      const penaltyBadge = hasPenalty
+        ? `<span style="font-size:10px;font-weight:700;color:var(--rose);background:rgba(171,66,50,0.1);border-radius:4px;padding:2px 6px;margin-left:6px;">⚠ Penalty set</span>`
+        : '';
+
+      const penaltyPanel = hasPenalty ? `
+        <div class="dl-penalty-panel" id="adlPenPanel-${t.id}" style="display:none;">
+          <div class="dl-penalty-view">
+            ${t.penalty_title  ? `<div class="pen-title">${escapeHtml(t.penalty_title)}</div>` : ''}
+            ${t.penalty_amount ? `<div class="pen-amount">${escapeHtml(t.penalty_amount)}</div>` : ''}
+            ${t.penalty_notes  ? `<div class="pen-notes">${escapeHtml(t.penalty_notes)}</div>` : ''}
+            ${t.penalty_updated_at ? `<div class="pen-updated">Last updated ${fmtDate(t.penalty_updated_at)}</div>` : ''}
+          </div>
+          <div class="dl-penalty-edit" id="adlPenEdit-${t.id}" style="display:none;">
+            <div class="dl-penalty-edit-row">
+              <label>Penalty name<input class="field-input" id="adlPenTitle-${t.id}" value="${escapeHtml(t.penalty_title || '')}" placeholder="e.g. SECP late filing fee"></label>
+              <label>Amount<input class="field-input" id="adlPenAmount-${t.id}" value="${escapeHtml(t.penalty_amount || '')}" placeholder="e.g. PKR 10,000/day"></label>
+            </div>
+            <label>Notes<textarea class="field-input" id="adlPenNotes-${t.id}">${escapeHtml(t.penalty_notes || '')}</textarea></label>
+            <div class="dl-penalty-btns">
+              <button class="btn-primary" onclick="advisorSavePenaltyPortfolio('${t.id}')">Save</button>
+              <button class="btn-ghost btn-row danger" onclick="advisorClearPenaltyPortfolio('${t.id}')">Remove</button>
+              <button class="btn-ghost btn-row" onclick="adlToggleEdit('${t.id}', false)">Cancel</button>
+            </div>
+          </div>
+          <button class="btn-ghost btn-row" style="margin-top:8px;font-size:11px;" onclick="adlToggleEdit('${t.id}', true)">Edit penalty</button>
+        </div>` : `
+        <div class="dl-penalty-panel" id="adlPenPanel-${t.id}" style="display:none;">
+          <div class="dl-penalty-edit">
+            <div class="dl-penalty-edit-row">
+              <label>Penalty name<input class="field-input" id="adlPenTitle-${t.id}" value="" placeholder="e.g. SECP late filing fee"></label>
+              <label>Amount<input class="field-input" id="adlPenAmount-${t.id}" value="" placeholder="e.g. PKR 10,000/day"></label>
+            </div>
+            <label>Notes<textarea class="field-input" id="adlPenNotes-${t.id}"></textarea></label>
+            <div class="dl-penalty-btns">
+              <button class="btn-primary" onclick="advisorSavePenaltyPortfolio('${t.id}')">Save penalty</button>
+            </div>
+          </div>
+        </div>`;
+
+      return `
+        <div class="dl-row ${rowCls}" data-task-id="${t.id}">
+          <div class="dl-row-top">
+            <div class="dl-row-meta">
+              <div class="dl-row-title">${escapeHtml(t.title)}${penaltyBadge}</div>
+              <div class="dl-row-sub">${escapeHtml(sub)}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+              <span class="dl-due-badge ${badgeCls}">${badgeTxt}</span>
+              <button class="dl-penalty-toggle ${hasPenalty ? '' : 'no-penalty'}" onclick="adlTogglePenPanel('${t.id}')">
+                ${hasPenalty ? '⚠ Penalty' : '+ Set penalty'}
+              </button>
+            </div>
+          </div>
+          ${penaltyPanel}
+        </div>`;
+    };
+
+    const section = (label, key, cls) => {
+      if (!groups[key].length) return '';
+      return `<div class="dl-bucket">
+        <div class="dl-bucket-label ${cls}">${label} (${groups[key].length})</div>
+        ${groups[key].map(rowHtml).join('')}
+      </div>`;
+    };
+
+    container.innerHTML =
+      section('Overdue', 'overdue', 'is-overdue') +
+      section('Due tomorrow', 'tomorrow', 'is-tomorrow') +
+      section('Due in 3 days', '3d', 'is-3d') +
+      section('Due in 7 days', '7d', 'is-7d');
+  };
+
+  window.adlTogglePenPanel = function (taskId) {
+    const p = $('adlPenPanel-' + taskId);
+    if (p) p.style.display = p.style.display === 'none' ? '' : 'none';
+  };
+  window.adlToggleEdit = function (taskId, on) {
+    const edit = $('adlPenEdit-' + taskId);
+    const panel = $('adlPenPanel-' + taskId);
+    if (!edit || !panel) return;
+    const view = panel.querySelector('.dl-penalty-view');
+    const editBtn = panel.querySelector('.btn-ghost.btn-row');
+    if (view) view.style.display = on ? 'none' : '';
+    if (editBtn) editBtn.style.display = on ? 'none' : '';
+    edit.style.display = on ? '' : 'none';
+  };
+
+  window.advisorSavePenaltyPortfolio = async function (taskId) {
+    const title  = ($('adlPenTitle-'  + taskId) || {}).value || '';
+    const amount = ($('adlPenAmount-' + taskId) || {}).value || '';
+    const notes  = ($('adlPenNotes-'  + taskId) || {}).value || '';
+    const { data, error } = await sb.from('curator_tasks').update({
+      penalty_title: title || null,
+      penalty_amount: amount || null,
+      penalty_notes: notes || null,
+      penalty_updated_at: new Date().toISOString()
+    }).eq('id', taskId).select().single();
+    if (error) { alert('Could not save: ' + error.message); return; }
+    const idx = advisorDeadlinesCache.findIndex(t => t.id === taskId);
+    if (idx >= 0) advisorDeadlinesCache[idx] = { ...advisorDeadlinesCache[idx], ...data };
+    renderAdvisorPortfolioDeadlines();
+    setTimeout(() => { const p = $('adlPenPanel-' + taskId); if (p) p.style.display = ''; }, 50);
+  };
+
+  window.advisorClearPenaltyPortfolio = async function (taskId) {
+    if (!confirm('Remove this penalty?')) return;
+    const { data, error } = await sb.from('curator_tasks').update({
+      penalty_title: null, penalty_amount: null, penalty_notes: null, penalty_updated_at: null
+    }).eq('id', taskId).select().single();
+    if (error) { alert('Could not remove: ' + error.message); return; }
+    const idx = advisorDeadlinesCache.findIndex(t => t.id === taskId);
+    if (idx >= 0) advisorDeadlinesCache[idx] = { ...advisorDeadlinesCache[idx], ...data };
+    renderAdvisorPortfolioDeadlines();
+  };
 
   // ════════════════════════════════════════════════════════════════════
   // DEADLINES & PENALTIES
