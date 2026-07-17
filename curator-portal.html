@@ -1901,6 +1901,118 @@
     padding: 14px;
     margin-bottom: 14px;
   }
+
+  /* ─── DEADLINES TAB ─── */
+  .dl-bucket { margin-bottom: 28px; }
+  .dl-bucket-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  .dl-bucket-label.is-overdue { color: var(--rose); border-color: rgba(171,66,50,0.25); }
+  .dl-bucket-label.is-tomorrow { color: #7d5a14; border-color: rgba(125,90,20,0.2); }
+  .dl-bucket-label.is-3d { color: #5a6e2a; border-color: rgba(90,110,42,0.2); }
+  .dl-bucket-label.is-7d { color: var(--ink-soft); }
+
+  .dl-row {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .dl-row.is-overdue { border-left: 3px solid var(--rose); }
+  .dl-row.is-tomorrow { border-left: 3px solid #c9a030; }
+  .dl-row.is-3d { border-left: 3px solid #7ab050; }
+
+  .dl-row-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .dl-row-meta {
+    flex: 1;
+    min-width: 0;
+  }
+  .dl-row-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--navy);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dl-row-sub {
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+  .dl-due-badge {
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 3px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .dl-due-badge.overdue  { background: #fce8e5; color: #8a2b1f; }
+  .dl-due-badge.tomorrow { background: #fdf2dc; color: #7d5a14; }
+  .dl-due-badge.soon-3   { background: #f0f7e8; color: #4a6020; }
+  .dl-due-badge.soon-7   { background: var(--cream-2); color: var(--ink-soft); }
+
+  /* Penalty panel */
+  .dl-penalty-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--rose);
+    background: rgba(171,66,50,0.08);
+    border: none;
+    border-radius: 4px;
+    padding: 3px 8px;
+    cursor: pointer;
+  }
+  .dl-penalty-toggle:hover { background: rgba(171,66,50,0.15); }
+  .dl-penalty-toggle.no-penalty {
+    color: var(--ink-faint);
+    background: var(--cream-2);
+    font-weight: 400;
+  }
+  .dl-penalty-panel {
+    margin-top: 10px;
+    background: rgba(171,66,50,0.04);
+    border: 1px solid rgba(171,66,50,0.15);
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .dl-penalty-view { font-size: 12px; color: var(--ink); line-height: 1.6; }
+  .dl-penalty-view .pen-title { font-weight: 700; color: var(--rose); font-size: 13px; margin-bottom: 4px; }
+  .dl-penalty-view .pen-amount { font-size: 15px; font-weight: 700; color: var(--rose); }
+  .dl-penalty-view .pen-notes { color: var(--ink-soft); margin-top: 4px; }
+  .dl-penalty-view .pen-updated { color: var(--ink-faint); font-size: 10px; margin-top: 6px; }
+  .dl-penalty-edit { display: flex; flex-direction: column; gap: 8px; }
+  .dl-penalty-edit label { font-size: 11px; font-weight: 600; color: var(--ink-soft); }
+  .dl-penalty-edit input,
+  .dl-penalty-edit textarea { width: 100%; margin-top: 2px; }
+  .dl-penalty-edit textarea { resize: vertical; min-height: 56px; }
+  .dl-penalty-edit-row { display: flex; gap: 8px; }
+  .dl-penalty-edit-row label { flex: 1; }
+  .dl-penalty-btns { display: flex; gap: 8px; margin-top: 4px; }
+  .dl-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ink-faint);
+    font-size: 13px;
+  }
+  .dl-empty strong { display: block; font-size: 15px; color: var(--ink-soft); margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -2088,6 +2200,18 @@
           <div class="placeholder">
             <h4 class="placeholder-title">Loading…</h4>
           </div>
+        </div>
+      </section>
+
+      <section class="tab-pane" id="tab-deadlines" data-role="client">
+        <div class="pane-header">
+          <p class="pane-eyebrow">Workspace</p>
+          <h1 class="pane-title">Deadlines</h1>
+          <p class="pane-sub">Upcoming and overdue tasks across all your companies, with any associated penalties.</p>
+        </div>
+        <div class="client-company-bar" id="clientDeadlinesCompanyBar" style="display:none;"></div>
+        <div id="clientDeadlinesContainer">
+          <div class="placeholder"><h4 class="placeholder-title">Loading…</h4></div>
         </div>
       </section>
 
@@ -2546,6 +2670,7 @@
           <div class="app-nav-section">Workspace</div>
           <div class="app-nav-item active" data-tab="home"      onclick="switchTab('home')">Home</div>
           <div class="app-nav-item"        data-tab="tasks"     onclick="switchTab('tasks')">Tasks</div>
+          <div class="app-nav-item"        data-tab="deadlines" onclick="switchTab('deadlines')">Deadlines</div>
           <div class="app-nav-item"        data-tab="documents" onclick="switchTab('documents')">Documents</div>
           <div class="app-nav-item"        data-tab="requests"  onclick="switchTab('requests')">My requests</div>
           <div class="app-nav-item"        data-tab="messages"  onclick="switchTab('messages')">Messages</div>
@@ -3737,6 +3862,7 @@
         <div class="filter-bar" style="margin-bottom: 14px;">
           <button class="filter-pill active" data-cdrawer-tab="tasks">Tasks</button>
           <button class="filter-pill" data-cdrawer-tab="docs">Documents</button>
+          <button class="filter-pill" data-cdrawer-tab="deadlines">Deadlines</button>
         </div>
 
         <!-- Tasks pane (advisor view) -->
@@ -3807,6 +3933,12 @@
             <button class="docsub-tab" data-docsub="requested" onclick="cdrawerSetDocSubtab('requested')">Requested</button>
           </div>
           <div id="cdrawerDocsList"></div>
+        </div>
+        <!-- Deadlines pane (advisor view) -->
+        <div id="cdrawer-deadlines" style="display:none;">
+          <div id="cdrawerDeadlinesList">
+            <div class="placeholder" style="padding:18px;"><h4 class="placeholder-title">Loading…</h4></div>
+          </div>
         </div>
       </div>
     `;
@@ -4755,11 +4887,12 @@
     if (e.target.matches('[data-cdrawer-tab]')) {
       const tab = e.target.dataset.cdrawerTab;
       document.querySelectorAll('[data-cdrawer-tab]').forEach(p => p.classList.toggle('active', p === e.target));
-      ['tasks','docs'].forEach(t => {
+      ['tasks','docs','deadlines'].forEach(t => {
         $('cdrawer-' + t).style.display = (t === tab) ? '' : 'none';
       });
       if (tab === 'tasks' && cdrawerCurrentClient) loadCdrawerTasks();
       if (tab === 'docs' && cdrawerCurrentClient) loadCdrawerDocs();
+      if (tab === 'deadlines' && cdrawerCurrentClient) renderAdvisorDeadlines();
     }
   });
 
@@ -4924,6 +5057,8 @@
     loadCdrawerTasks();
     const docsPane = $('cdrawer-docs');
     if (docsPane && docsPane.style.display !== 'none') loadCdrawerDocs();
+    const dlPane = $('cdrawer-deadlines');
+    if (dlPane && dlPane.style.display !== 'none') renderAdvisorDeadlines();
   };
 
   window.cdrawerAddCompany = async function () {
@@ -6535,6 +6670,7 @@
         if (clientMessagesCache.length === 0) loadClientMessages();
       }
       if (name === 'tasks') loadClientTasks();
+      if (name === 'deadlines') renderClientDeadlines();
       if (name === 'documents') {
         loadClientDocs();
         // Reset to category grid view on each visit
@@ -6916,6 +7052,225 @@
     // instead we use the auth-success hook below to compute once and
     // then rely on realtime updates.
   }
+
+  // ════════════════════════════════════════════════════════════════════
+  // DEADLINES & PENALTIES
+  // ════════════════════════════════════════════════════════════════════
+
+  // Bucket a task for the deadlines view.
+  // Returns: 'overdue' | 'tomorrow' | '3d' | '7d' | null (not in range)
+  function deadlineBucket(dateStr) {
+    const n = daysUntil(dateStr);
+    if (n === null) return null;
+    if (n < 0) return 'overdue';
+    if (n === 0 || n === 1) return 'tomorrow';
+    if (n <= 3) return '3d';
+    if (n <= 7) return '7d';
+    return null;
+  }
+
+  function deadlineDueBadgeText(dateStr) {
+    const n = daysUntil(dateStr);
+    if (n === null) return '';
+    if (n < 0) return `${Math.abs(n)}d overdue`;
+    if (n === 0) return 'Due today';
+    if (n === 1) return 'Due tomorrow';
+    return `In ${n} days`;
+  }
+
+  function deadlineDueBadgeClass(bucket) {
+    if (bucket === 'overdue') return 'overdue';
+    if (bucket === 'tomorrow') return 'tomorrow';
+    if (bucket === '3d') return 'soon-3';
+    return 'soon-7';
+  }
+
+  // ── Shared row builder (isAdvisor controls edit vs read-only penalties) ──
+  function buildDeadlineRow(task, bucket, isAdvisor) {
+    const co = isAdvisor
+      ? (cdrawerCompanies || []).find(c => c.id === task.company_id)
+      : (clientCompanies || []).find(c => c.id === task.company_id);
+    const coName = co ? co.name : '';
+    const catLabel = task.is_compliance ? categoryLabel(task.category) : 'Task';
+    const sub = [catLabel, coName].filter(Boolean).join(' · ');
+    const badgeClass = deadlineDueBadgeClass(bucket);
+    const badgeText = deadlineDueBadgeText(task.due_date);
+    const rowClass = bucket === 'overdue' ? 'is-overdue' : (bucket === 'tomorrow' ? 'is-tomorrow' : (bucket === '3d' ? 'is-3d' : ''));
+    const taskId = task.id;
+
+    const hasPenalty = !!(task.penalty_title || task.penalty_amount || task.penalty_notes);
+    const penaltyToggleLabel = hasPenalty ? `⚠ Penalty` : (isAdvisor ? `+ Set penalty` : '');
+    const penaltyToggleClass = hasPenalty ? 'dl-penalty-toggle' : 'dl-penalty-toggle no-penalty';
+
+    let penaltyPanel = '';
+    if (isAdvisor) {
+      // Read: show existing penalty details
+      const existingView = hasPenalty ? `
+        <div class="dl-penalty-view">
+          ${task.penalty_title ? `<div class="pen-title">${escapeHtml(task.penalty_title)}</div>` : ''}
+          ${task.penalty_amount ? `<div class="pen-amount">${escapeHtml(task.penalty_amount)}</div>` : ''}
+          ${task.penalty_notes ? `<div class="pen-notes">${escapeHtml(task.penalty_notes)}</div>` : ''}
+          ${task.penalty_updated_at ? `<div class="pen-updated">Last updated ${fmtDate(task.penalty_updated_at)}</div>` : ''}
+        </div>` : '';
+      // Edit form (always available for advisor)
+      penaltyPanel = `
+        <div class="dl-penalty-panel" id="dlPenPanel-${taskId}" style="display:none;">
+          ${existingView}
+          <div class="dl-penalty-edit" id="dlPenEdit-${taskId}" style="${hasPenalty ? 'display:none;' : ''}">
+            <div class="dl-penalty-edit-row">
+              <label>Penalty name / authority<input class="field-input" id="dlPenTitle-${taskId}" value="${escapeHtml(task.penalty_title || '')}" placeholder="e.g. SECP late filing fee"></label>
+              <label>Amount<input class="field-input" id="dlPenAmount-${taskId}" value="${escapeHtml(task.penalty_amount || '')}" placeholder="e.g. PKR 10,000/day"></label>
+            </div>
+            <label>Notes / description<textarea class="field-input" id="dlPenNotes-${taskId}">${escapeHtml(task.penalty_notes || '')}</textarea></label>
+            <div class="dl-penalty-btns">
+              <button class="btn-primary" onclick="advisorSavePenalty('${taskId}')">Save penalty</button>
+              ${hasPenalty ? `<button class="btn-ghost btn-row danger" onclick="advisorClearPenalty('${taskId}')">Remove</button>` : ''}
+              ${hasPenalty ? `<button class="btn-ghost btn-row" onclick="dlToggleEditMode('${taskId}', false)">Cancel</button>` : ''}
+            </div>
+          </div>
+          ${hasPenalty ? `<button class="btn-ghost btn-row" style="margin-top:8px; font-size:11px;" onclick="dlToggleEditMode('${taskId}', true)">Edit penalty</button>` : ''}
+        </div>`;
+    } else if (hasPenalty) {
+      // Client: read-only view
+      penaltyPanel = `
+        <div class="dl-penalty-panel" id="dlPenPanel-${taskId}" style="display:none;">
+          <div class="dl-penalty-view">
+            ${task.penalty_title ? `<div class="pen-title">${escapeHtml(task.penalty_title)}</div>` : ''}
+            ${task.penalty_amount ? `<div class="pen-amount">${escapeHtml(task.penalty_amount)}</div>` : ''}
+            ${task.penalty_notes ? `<div class="pen-notes">${escapeHtml(task.penalty_notes)}</div>` : ''}
+          </div>
+        </div>`;
+    }
+
+    const penaltyToggle = (isAdvisor || hasPenalty)
+      ? `<button class="${penaltyToggleClass}" onclick="dlTogglePenPanel('${taskId}')">${penaltyToggleLabel}</button>`
+      : '';
+
+    return `
+      <div class="dl-row ${rowClass}" data-task-id="${taskId}">
+        <div class="dl-row-top">
+          <div class="dl-row-meta">
+            <div class="dl-row-title">${escapeHtml(task.title)}</div>
+            ${sub ? `<div class="dl-row-sub">${escapeHtml(sub)}</div>` : ''}
+          </div>
+          <span class="dl-due-badge ${badgeClass}">${badgeText}</span>
+        </div>
+        ${penaltyToggle}
+        ${penaltyPanel}
+      </div>`;
+  }
+
+  function buildDeadlineBuckets(tasks, isAdvisor) {
+    const groups = { overdue: [], tomorrow: [], '3d': [], '7d': [] };
+    tasks.forEach(t => {
+      if (t.status === 'completed') return;
+      const b = deadlineBucket(t.due_date);
+      if (b) groups[b].push(t);
+    });
+
+    const byDue = (a, b) => (a.due_date || '9999') < (b.due_date || '9999') ? -1 : 1;
+    Object.values(groups).forEach(arr => arr.sort(byDue));
+
+    let html = '';
+    const section = (label, key, cls) => {
+      if (!groups[key].length) return '';
+      return `<div class="dl-bucket">
+        <div class="dl-bucket-label ${cls}">${label} (${groups[key].length})</div>
+        ${groups[key].map(t => buildDeadlineRow(t, key, isAdvisor)).join('')}
+      </div>`;
+    };
+    html += section('Overdue', 'overdue', 'is-overdue');
+    html += section('Due tomorrow', 'tomorrow', 'is-tomorrow');
+    html += section('Due in 3 days', '3d', 'is-3d');
+    html += section('Due in 7 days', '7d', 'is-7d');
+
+    if (!html) {
+      return `<div class="dl-empty"><strong>All clear.</strong>No tasks due in the next 7 days.</div>`;
+    }
+    return html;
+  }
+
+  // ── Advisor: render deadlines for current drawer client ──
+  function renderAdvisorDeadlines() {
+    const list = $('cdrawerDeadlinesList');
+    if (!list) return;
+    if (!cdrawerTasksCache.length) {
+      list.innerHTML = `<div class="placeholder" style="padding:18px;"><h4 class="placeholder-title">No tasks loaded yet. Open the Tasks tab first.</h4></div>`;
+      return;
+    }
+    let tasks = cdrawerTasksCache;
+    if (cdrawerCurrentCompanyId) tasks = tasks.filter(t => t.company_id === cdrawerCurrentCompanyId);
+    list.innerHTML = buildDeadlineBuckets(tasks, true);
+  }
+
+  // ── Client: render deadlines full-pane ──
+  function renderClientDeadlines() {
+    const container = $('clientDeadlinesContainer');
+    if (!container) return;
+    if (!clientTasksCache.length) {
+      // Tasks not loaded yet, load first then re-render
+      loadClientTasks().then(() => {
+        renderClientDeadlines();
+      });
+      return;
+    }
+    let tasks = clientTasksCache.filter(taskInClientCompany);
+    container.innerHTML = buildDeadlineBuckets(tasks, false);
+  }
+
+  // ── Toggle penalty panel visibility ──
+  window.dlTogglePenPanel = function (taskId) {
+    const panel = $('dlPenPanel-' + taskId);
+    if (panel) panel.style.display = panel.style.display === 'none' ? '' : 'none';
+  };
+
+  // ── Toggle between view/edit mode in advisor penalty panel ──
+  window.dlToggleEditMode = function (taskId, editMode) {
+    const editDiv = $('dlPenEdit-' + taskId);
+    const panel = $('dlPenPanel-' + taskId);
+    if (!editDiv || !panel) return;
+    // Hide/show the view section (everything except editDiv and the edit button)
+    const viewDiv = panel.querySelector('.dl-penalty-view');
+    const editBtn = panel.querySelector('button.btn-ghost');
+    if (viewDiv) viewDiv.style.display = editMode ? 'none' : '';
+    if (editBtn) editBtn.style.display = editMode ? 'none' : '';
+    editDiv.style.display = editMode ? '' : 'none';
+  };
+
+  // ── Advisor: save penalty ──
+  window.advisorSavePenalty = async function (taskId) {
+    const title  = ($('dlPenTitle-' + taskId)  || {}).value || '';
+    const amount = ($('dlPenAmount-' + taskId) || {}).value || '';
+    const notes  = ($('dlPenNotes-' + taskId)  || {}).value || '';
+    const { data, error } = await sb.from('curator_tasks').update({
+      penalty_title: title || null,
+      penalty_amount: amount || null,
+      penalty_notes: notes || null,
+      penalty_updated_at: new Date().toISOString()
+    }).eq('id', taskId).select().single();
+    if (error) { alert('Could not save: ' + error.message); return; }
+    // Update cache
+    const idx = cdrawerTasksCache.findIndex(t => t.id === taskId);
+    if (idx >= 0) cdrawerTasksCache[idx] = data;
+    renderAdvisorDeadlines();
+    // Re-open the penalty panel so they can see the saved result
+    setTimeout(() => {
+      const p = $('dlPenPanel-' + taskId);
+      if (p) p.style.display = '';
+    }, 50);
+  };
+
+  // ── Advisor: remove penalty ──
+  window.advisorClearPenalty = async function (taskId) {
+    if (!confirm('Remove the penalty from this task?')) return;
+    const { data, error } = await sb.from('curator_tasks').update({
+      penalty_title: null, penalty_amount: null, penalty_notes: null, penalty_updated_at: null
+    }).eq('id', taskId).select().single();
+    if (error) { alert('Could not remove: ' + error.message); return; }
+    const idx = cdrawerTasksCache.findIndex(t => t.id === taskId);
+    if (idx >= 0) cdrawerTasksCache[idx] = data;
+    renderAdvisorDeadlines();
+  };
 
   // ─── Init ───
   async function init() {
