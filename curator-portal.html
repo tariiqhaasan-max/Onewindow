@@ -3108,12 +3108,15 @@
     filtered.forEach(lead => {
       const inChat = lead.status === 'in_chat';
       const chatBadge = inChat ? ' <span class="inchat-badge">In chat</span>' : '';
-      const actions = inChat
-        ? `<button class="btn-gold btn-row" onclick="convertLeadFromRow('${lead.id}')">Start onboarding</button>
-           <button class="btn-danger btn-row" onclick="deleteLead('${lead.id}')">Delete</button>`
-        : `<button class="btn-gold btn-row" onclick="inviteToChat('${lead.id}')">Invite to chat</button>
-           <button class="btn-ghost btn-row" onclick="convertLeadFromRow('${lead.id}')">Convert now</button>
-           <button class="btn-danger btn-row" onclick="deleteLead('${lead.id}')">Delete</button>`;
+      let actions;
+      if (inChat) {
+        actions = '<button class="btn-gold btn-row" onclick="convertLeadFromRow(\'' + lead.id + '\')">Start onboarding</button>'
+                + ' <button class="btn-danger btn-row" onclick="deleteLead(\'' + lead.id + '\')">Delete</button>';
+      } else {
+        actions = '<button class="btn-gold btn-row" onclick="inviteToChat(\'' + lead.id + '\')">Invite to chat</button>'
+                + ' <button class="btn-ghost btn-row" onclick="convertLeadFromRow(\'' + lead.id + '\')">Convert now</button>'
+                + ' <button class="btn-danger btn-row" onclick="deleteLead(\'' + lead.id + '\')">Delete</button>';
+      }
       html += `
         <tr onclick="openLeadDrawer('${lead.id}')">
           <td>
@@ -3172,6 +3175,16 @@
   function renderLeadDrawer(lead) {
     const isConverted = !!lead.converted_to_client_id;
     const firstName = (lead.name || '').split(' ')[0] || 'client';
+
+    const convertedSection = isConverted
+      ? '<div class="drawer-section"><h4 class="drawer-section-title">Converted to client</h4>'
+        + '<div class="detail-row"><div class="detail-label">Converted</div><div class="detail-value">' + fmtDateTime(lead.converted_at) + '</div></div>'
+        + '<div class="detail-row"><div class="detail-label">Client ID</div><div class="detail-value" style="font-family:monospace;font-size:11px;">' + escapeHtml(lead.converted_to_client_id) + '</div></div>'
+        + '</div>'
+      : '<div class="invite-banner"><h4 class="invite-banner-title">Convert to client</h4>'
+        + '<p class="invite-banner-body">Use this once you\'ve agreed to start work with <strong>' + escapeHtml(firstName) + '</strong>. It creates their Curator client record and portal account, and emails them a link to set their password.</p>'
+        + '<button class="btn-gold" id="inviteBtn" onclick="sendInvite()">Convert ' + escapeHtml(firstName) + ' to client</button>'
+        + '<div class="form-msg" id="inviteMsg" style="margin-top:8px;"></div></div>';
 
     $('leadDrawerTitle').textContent = lead.name || 'Lead';
 
@@ -3236,28 +3249,7 @@
         </div>
       </div>
 
-      ${isConverted ? `
-        <div class="drawer-section">
-          <h4 class="drawer-section-title">Converted to client</h4>
-          <div class="detail-row">
-            <div class="detail-label">Converted</div>
-            <div class="detail-value">${fmtDateTime(lead.converted_at)}</div>
-          </div>
-          <div class="detail-row">
-            <div class="detail-label">Client ID</div>
-            <div class="detail-value" style="font-family: monospace; font-size: 11px;">${escapeHtml(lead.converted_to_client_id)}</div>
-          </div>
-        </div>
-      ` : `
-        <div class="invite-banner">
-          <h4 class="invite-banner-title">Convert to client</h4>
-          <p class="invite-banner-body">
-            Use this once you've agreed to start work with <strong>${escapeHtml(firstName)}</strong>. It creates their Curator client record and portal account, and emails them a link to set their password.
-          </p>
-          <button class="btn-gold" id="inviteBtn" onclick="sendInvite()">Convert ${escapeHtml(firstName)} to client</button>
-          <div class="form-msg" id="inviteMsg" style="margin-top:8px;"></div>
-        </div>
-      `}
+      ${convertedSection}
 
       <div class="drawer-section">
         <h4 class="drawer-section-title">Danger zone</h4>
@@ -3780,6 +3772,33 @@
     $('clientDrawerTitle').textContent = client.full_name || 'Client';
     const status = client.status || 'prospect';
     const bookkeeping = !!client.has_bookkeeping_access;
+
+    // Build status banners as plain strings to avoid nested backtick ternaries
+    const prospectBanner = (isSuperAdmin && status === 'prospect')
+      ? '<div class="prospect-banner"><div class="prospect-banner-text"><strong>This is a prospect.</strong> They can only message you right now — Tasks, Documents, and Home are locked until you start onboarding.</div>'
+        + '<label class="prospect-email-check"><input type="checkbox" id="onboardSendEmail" checked><span>Email them the onboarding link</span></label>'
+        + '<button class="btn-gold" id="startOnboardingBtn" onclick="startOnboarding(\'' + client.id + '\')">Start onboarding</button>'
+        + '<span class="form-msg" id="onboardMsg"></span></div>'
+      : '';
+    const deactivateBanner = (isSuperAdmin && (status === 'active' || status === 'prospect'))
+      ? '<div class="lifecycle-bar"><div class="lifecycle-text">Deactivating moves this client to <strong>Dormant</strong> (reversible). You can schedule deletion only after deactivating.</div>'
+        + '<button class="btn-ghost" onclick="deactivateClient(\'' + client.id + '\')">Deactivate</button></div>'
+      : '';
+    const dormantBanner = (isSuperAdmin && status === 'dormant')
+      ? '<div class="lifecycle-bar warn"><div class="lifecycle-text"><strong>Dormant.</strong> You can reactivate, or schedule deletion (a 15-day grace window during which their data is kept and they\'re notified).</div>'
+        + '<button class="btn-ghost" onclick="reactivateClient(\'' + client.id + '\')">Reactivate</button>'
+        + '<button class="btn-danger" onclick="scheduleDeletion(\'' + client.id + '\')">Schedule deletion</button>'
+        + '<span class="form-msg" id="lifecycleMsg"></span></div>'
+      : '';
+    const closingBanner = (isSuperAdmin && status === 'closing')
+      ? '<div class="lifecycle-bar danger"><div class="lifecycle-text"><strong>Scheduled for deletion.</strong> Permanent removal '
+        + (client.deletion_scheduled_at ? 'on <strong>' + fmtDate(client.deletion_scheduled_at) + '</strong>' : 'pending')
+        + '. You can cancel (back to dormant) or wipe now. Wiping is permanent and removes their login, documents, tasks, and messages.</div>'
+        + '<button class="btn-ghost" onclick="cancelDeletion(\'' + client.id + '\')">Cancel deletion</button>'
+        + '<button class="btn-danger" onclick="wipeClientNow(\'' + client.id + '\', ' + JSON.stringify(client.full_name || '') + ')">Wipe now</button>'
+        + '<span class="form-msg" id="lifecycleMsg"></span></div>'
+      : '';
+
     $('clientDrawerBody').innerHTML = `
       <div class="cprofile-card">
         <div class="cprofile-head">
@@ -3815,47 +3834,13 @@
         </div>
       </div>
 
-      ${(isSuperAdmin && status === 'prospect') ? `
-      <div class="prospect-banner">
-        <div class="prospect-banner-text">
-          <strong>This is a prospect.</strong> They can only message you right now — Tasks, Documents, and Home are locked until you start onboarding.
-        </div>
-        <label class="prospect-email-check">
-          <input type="checkbox" id="onboardSendEmail" checked>
-          <span>Email them the onboarding link</span>
-        </label>
-        <button class="btn-gold" id="startOnboardingBtn" onclick="startOnboarding('${client.id}')">Start onboarding</button>
-        <span class="form-msg" id="onboardMsg"></span>
-      </div>
-      ` : ''}
+      ${prospectBanner}
 
-      ${(isSuperAdmin && (status === 'active' || status === 'prospect')) ? `
-      <div class="lifecycle-bar">
-        <div class="lifecycle-text">Deactivating moves this client to <strong>Dormant</strong> (reversible). You can schedule deletion only after deactivating.</div>
-        <button class="btn-ghost" onclick="deactivateClient('${client.id}')">Deactivate</button>
-      </div>
-      ` : ''}
+      ${deactivateBanner}
 
-      ${(isSuperAdmin && status === 'dormant') ? `
-      <div class="lifecycle-bar warn">
-        <div class="lifecycle-text"><strong>Dormant.</strong> You can reactivate, or schedule deletion (a 15-day grace window during which their data is kept and they're notified).</div>
-        <button class="btn-ghost" onclick="reactivateClient('${client.id}')">Reactivate</button>
-        <button class="btn-danger" onclick="scheduleDeletion('${client.id}')">Schedule deletion</button>
-        <span class="form-msg" id="lifecycleMsg"></span>
-      </div>
-      ` : ''}
+      ${dormantBanner}
 
-      ${(isSuperAdmin && status === 'closing') ? `
-      <div class="lifecycle-bar danger">
-        <div class="lifecycle-text">
-          <strong>Scheduled for deletion.</strong> Permanent removal ${client.deletion_scheduled_at ? 'on <strong>' + fmtDate(client.deletion_scheduled_at) + '</strong>' : 'pending'}.
-          You can cancel (back to dormant) or wipe now. Wiping is permanent and removes their login, documents, tasks, and messages.
-        </div>
-        <button class="btn-ghost" onclick="cancelDeletion('${client.id}')">Cancel deletion</button>
-        <button class="btn-danger" onclick="wipeClientNow('${client.id}', ${JSON.stringify(client.full_name || '')})">Wipe now</button>
-        <span class="form-msg" id="lifecycleMsg"></span>
-      </div>
-      ` : ''}
+      ${closingBanner}
 
       <!-- Messages — collapsible, sits near the top; auto-opens on new message -->
       <div id="cdrawer-messages" class="cdrawer-msg-panel">
@@ -7349,20 +7334,19 @@
 
     let penaltyPanel = '';
     if (isAdvisor) {
-      // Build penalty view rows without nested ternary backticks
       let penViewHtml = '';
       if (hasPenalty) {
-        penViewHtml += '<div class="dl-penalty-view">';
+        penViewHtml = '<div class="dl-penalty-view">';
         if (task.penalty_title)      penViewHtml += '<div class="pen-title">'   + escapeHtml(task.penalty_title)  + '</div>';
         if (task.penalty_amount)     penViewHtml += '<div class="pen-amount">'  + escapeHtml(task.penalty_amount) + '</div>';
         if (task.penalty_notes)      penViewHtml += '<div class="pen-notes">'   + escapeHtml(task.penalty_notes)  + '</div>';
         if (task.penalty_updated_at) penViewHtml += '<div class="pen-updated">Last updated ' + fmtDate(task.penalty_updated_at) + '</div>';
         penViewHtml += '</div>';
       }
-      const editStyle   = hasPenalty ? 'display:none;' : '';
-      const removeBtn   = hasPenalty ? '<button class="btn-ghost btn-row danger" onclick="advisorClearPenalty(\'' + taskId + '\')">Remove</button>' : '';
-      const cancelBtn   = hasPenalty ? '<button class="btn-ghost btn-row" onclick="dlToggleEditMode(\'' + taskId + '\', false)">Cancel</button>' : '';
-      const editPenBtn  = hasPenalty ? '<button class="btn-ghost btn-row" style="margin-top:8px;font-size:11px;" onclick="dlToggleEditMode(\'' + taskId + '\', true)">Edit penalty</button>' : '';
+      const editStyle  = hasPenalty ? 'display:none;' : '';
+      const removeBtn  = hasPenalty ? '<button class="btn-ghost btn-row danger" onclick="advisorClearPenalty(\'' + taskId + '\')">Remove</button>' : '';
+      const cancelBtn  = hasPenalty ? '<button class="btn-ghost btn-row" onclick="dlToggleEditMode(\'' + taskId + '\', false)">Cancel</button>' : '';
+      const editPenBtn = hasPenalty ? '<button class="btn-ghost btn-row" style="margin-top:8px;font-size:11px;" onclick="dlToggleEditMode(\'' + taskId + '\', true)">Edit penalty</button>' : '';
       penaltyPanel = '<div class="dl-penalty-panel" id="dlPenPanel-' + taskId + '" style="display:none;">'
         + penViewHtml
         + '<div class="dl-penalty-edit" id="dlPenEdit-' + taskId + '" style="' + editStyle + '">'
@@ -7386,19 +7370,28 @@
       penViewHtml += '</div>';
       penaltyPanel = '<div class="dl-penalty-panel" id="dlPenPanel-' + taskId + '" style="display:none;">' + penViewHtml + '</div>';
     }
+    } else if (hasPenalty) {
+      // Client: read-only view
+      penaltyPanel = `
+        <div class="dl-penalty-panel" id="dlPenPanel-${taskId}" style="display:none;">
+          <div class="dl-penalty-view">
+            ${task.penalty_title ? `<div class="pen-title">${escapeHtml(task.penalty_title)}</div>` : ''}
+            ${task.penalty_amount ? `<div class="pen-amount">${escapeHtml(task.penalty_amount)}</div>` : ''}
+            ${task.penalty_notes ? `<div class="pen-notes">${escapeHtml(task.penalty_notes)}</div>` : ''}
+          </div>
+        </div>`;
+    }
 
     const penaltyToggle = (isAdvisor || hasPenalty)
-      ? '<button class="' + penaltyToggleClass + '" onclick="dlTogglePenPanel(\'' + taskId + '\')">' + penaltyToggleLabel + '</button>'
+      ? `<button class="${penaltyToggleClass}" onclick="dlTogglePenPanel('${taskId}')">${penaltyToggleLabel}</button>`
       : '';
-
-    const subRow = sub ? '<div class="dl-row-sub">' + escapeHtml(sub) + '</div>' : '';
 
     return `
       <div class="dl-row ${rowClass}" data-task-id="${taskId}">
         <div class="dl-row-top">
           <div class="dl-row-meta">
             <div class="dl-row-title">${escapeHtml(task.title)}</div>
-            ${subRow}
+            ${sub ? `<div class="dl-row-sub">${escapeHtml(sub)}</div>` : ''}
           </div>
           <span class="dl-due-badge ${badgeClass}">${badgeText}</span>
         </div>
