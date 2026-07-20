@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5260,24 +5261,30 @@
       const docsChip = linkedDocs.length
         ? `<button class="ctask-doc-chip" onclick="cdrawerToggleTaskDocs('${task.id}', this)">📎 ${linkedDocs.length} doc${linkedDocs.length === 1 ? '' : 's'}</button>`
         : '';
-      const docsRegion = linkedDocs.length
-        ? `<div class="ctask-docs" id="ctaskDocs-${task.id}" style="display:none;">` +
-            linkedDocs.map(d => {
-              const who = d.uploader_role === 'advisor' ? 'Curator' : 'Client';
-              const isReq = d.status === 'requested';
-              const right = isReq
-                ? `<span class="doc-pending-badge">Pending</span>`
-                : `<button class="doc-action" onclick="docView('${(d.storage_path||'').replace(/'/g, "\\'")}')">View</button>
-                   <button class="doc-action" onclick="docDownload('${(d.storage_path||'').replace(/'/g, "\\'")}','${(d.filename||'').replace(/'/g, "\\'")}')">Download</button>`;
-              const nm = isReq ? (d.requested_label || d.filename) : d.filename;
-              return `<div class="ctask-doc-item">
-                  <span class="ctask-doc-name">${isReq ? '📋 ' : ''}${escapeHtml(nm)}</span>
-                  <span class="ctask-doc-who">${who}</span>
-                  ${right}
-                </div>`;
-            }).join('') +
-          `</div>`
-        : '';
+      let docsRegion = '';
+      if (linkedDocs.length) {
+        let docsInner = '';
+        linkedDocs.forEach(d => {
+          const who = d.uploader_role === 'advisor' ? 'Curator' : 'Client';
+          const isReq = d.status === 'requested';
+          let right;
+          if (isReq) {
+            right = '<span class="doc-pending-badge">Pending</span>';
+          } else {
+            const sp = (d.storage_path || '').replace(/'/g, "\\'");
+            const fn = (d.filename || '').replace(/'/g, "\\'");
+            right = '<button class="doc-action" onclick="docView(\'' + sp + '\')">View</button>'
+                  + '<button class="doc-action" onclick="docDownload(\'' + sp + '\',\'' + fn + '\')">Download</button>';
+          }
+          const nm = isReq ? (d.requested_label || d.filename) : d.filename;
+          docsInner += '<div class="ctask-doc-item">'
+            + '<span class="ctask-doc-name">' + (isReq ? '📋 ' : '') + escapeHtml(nm) + '</span>'
+            + '<span class="ctask-doc-who">' + who + '</span>'
+            + right
+            + '</div>';
+        });
+        docsRegion = '<div class="ctask-docs" id="ctaskDocs-' + task.id + '" style="display:none;">' + docsInner + '</div>';
+      }
 
       const taskQuestions = (cdrawerQuestionsCache || []).filter(q => q.task_id === task.id).sort((a,b) => (a.sort_order||0)-(b.sort_order||0));
       const answeredCount = taskQuestions.filter(q => q.answer && q.answer.trim()).length;
@@ -5285,31 +5292,33 @@
         ? `❔ ${answeredCount}/${taskQuestions.length} answered`
         : `❔ Add questions`;
       const qChip = `<button class="ctask-q-chip" onclick="cdrawerToggleTaskQ('${task.id}', this)">${qChipLabel}</button>`;
-      const qRegion = `<div class="ctask-questions" id="ctaskQ-${task.id}" style="display:none;">` +
-        (taskQuestions.length === 0
-          ? `<div class="ctq-reuse" id="ctqReuse-${task.id}" data-title="${escapeHtml(task.title)}"></div>`
-          : '') +
-        taskQuestions.map(q => {
-          const answered = q.answer && q.answer.trim();
-          const ans = answered
-            ? `<div class="ctq-answer">${escapeHtml(q.answer)}</div>`
-            : `<div class="ctq-answer empty">No answer yet</div>`;
-          const tick = answered ? `<span class="ctq-tick" title="Client answered">✓</span>` : '';
-          return `<div class="ctq-item ${q.handled ? 'handled' : ''}">
-              <div class="ctq-qrow">
-                <span class="ctq-check ${q.handled ? 'on' : ''}" onclick="cdrawerToggleQHandled('${q.id}','${task.id}')" title="Mark handled"></span>
-                <span class="ctq-qtext">${escapeHtml(q.question)}</span>
-                ${tick}
-                <button class="ctq-del" onclick="cdrawerDeleteQuestion('${q.id}','${task.id}')" title="Remove question">×</button>
-              </div>
-              ${ans}
-            </div>`;
-        }).join('') +
-        `<div class="ctq-add">
-           <input class="field-input ctq-add-input" id="ctqNew-${task.id}" placeholder="Type a question for the client…" onkeydown="if(event.key==='Enter'){cdrawerAddQuestion('${task.id}');}">
-           <button class="btn-ghost btn-row" onclick="cdrawerAddQuestion('${task.id}')">Add</button>
-         </div>` +
-        `</div>`;
+
+      let qRegionInner = taskQuestions.length === 0
+        ? '<div class="ctq-reuse" id="ctqReuse-' + task.id + '" data-title="' + escapeHtml(task.title) + '"></div>'
+        : '';
+      taskQuestions.forEach(q => {
+        const answered = q.answer && q.answer.trim();
+        const ans = answered
+          ? '<div class="ctq-answer">' + escapeHtml(q.answer) + '</div>'
+          : '<div class="ctq-answer empty">No answer yet</div>';
+        const tick = answered ? '<span class="ctq-tick" title="Client answered">✓</span>' : '';
+        const handledCls = q.handled ? 'handled' : '';
+        const checkCls   = q.handled ? 'on' : '';
+        qRegionInner += '<div class="ctq-item ' + handledCls + '">'
+          + '<div class="ctq-qrow">'
+          +   '<span class="ctq-check ' + checkCls + '" onclick="cdrawerToggleQHandled(\'' + q.id + '\',\'' + task.id + '\')" title="Mark handled"></span>'
+          +   '<span class="ctq-qtext">' + escapeHtml(q.question) + '</span>'
+          +   tick
+          +   '<button class="ctq-del" onclick="cdrawerDeleteQuestion(\'' + q.id + '\',\'' + task.id + '\')" title="Remove question">×</button>'
+          + '</div>'
+          + ans
+          + '</div>';
+      });
+      qRegionInner += '<div class="ctq-add">'
+        + '<input class="field-input ctq-add-input" id="ctqNew-' + task.id + '" placeholder="Type a question for the client…" onkeydown="if(event.key===\'Enter\'){cdrawerAddQuestion(\'' + task.id + '\');}">'
+        + '<button class="btn-ghost btn-row" onclick="cdrawerAddQuestion(\'' + task.id + '\')">Add</button>'
+        + '</div>';
+      const qRegion = '<div class="ctask-questions" id="ctaskQ-' + task.id + '" style="display:none;">' + qRegionInner + '</div>';
 
       // Pricing model:
       //  - Recurring compliance under an ACCEPTED retainer: service fee is
