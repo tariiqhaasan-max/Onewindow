@@ -7184,13 +7184,14 @@
         ? `<span style="font-size:10px;font-weight:700;color:var(--rose);background:rgba(171,66,50,0.1);border-radius:4px;padding:2px 6px;margin-left:6px;">⚠ Penalty set</span>`
         : '';
 
-      const penaltyPanel = hasPenalty ? `
-        <div class="dl-penalty-panel" id="adlPenPanel-${t.id}" style="display:none;">
+      let penaltyPanel;
+      if (hasPenalty) {
+        penaltyPanel = `<div class="dl-penalty-panel" id="adlPenPanel-${t.id}" style="display:none;">
           <div class="dl-penalty-view">
-            ${t.penalty_title  ? `<div class="pen-title">${escapeHtml(t.penalty_title)}</div>` : ''}
-            ${t.penalty_amount ? `<div class="pen-amount">${escapeHtml(t.penalty_amount)}</div>` : ''}
-            ${t.penalty_notes  ? `<div class="pen-notes">${escapeHtml(t.penalty_notes)}</div>` : ''}
-            ${t.penalty_updated_at ? `<div class="pen-updated">Last updated ${fmtDate(t.penalty_updated_at)}</div>` : ''}
+            ${t.penalty_title  ? '<div class="pen-title">'   + escapeHtml(t.penalty_title)  + '</div>' : ''}
+            ${t.penalty_amount ? '<div class="pen-amount">'  + escapeHtml(t.penalty_amount) + '</div>' : ''}
+            ${t.penalty_notes  ? '<div class="pen-notes">'   + escapeHtml(t.penalty_notes)  + '</div>' : ''}
+            ${t.penalty_updated_at ? '<div class="pen-updated">Last updated ' + fmtDate(t.penalty_updated_at) + '</div>' : ''}
           </div>
           <div class="dl-penalty-edit" id="adlPenEdit-${t.id}" style="display:none;">
             <div class="dl-penalty-edit-row">
@@ -7205,8 +7206,9 @@
             </div>
           </div>
           <button class="btn-ghost btn-row" style="margin-top:8px;font-size:11px;" onclick="adlToggleEdit('${t.id}', true)">Edit penalty</button>
-        </div>` : `
-        <div class="dl-penalty-panel" id="adlPenPanel-${t.id}" style="display:none;">
+        </div>`;
+      } else {
+        penaltyPanel = `<div class="dl-penalty-panel" id="adlPenPanel-${t.id}" style="display:none;">
           <div class="dl-penalty-edit">
             <div class="dl-penalty-edit-row">
               <label>Penalty name<input class="field-input" id="adlPenTitle-${t.id}" value="" placeholder="e.g. SECP late filing fee"></label>
@@ -7218,6 +7220,7 @@
             </div>
           </div>
         </div>`;
+      }
 
       return `
         <div class="dl-row ${rowCls}" data-task-id="${t.id}">
