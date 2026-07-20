@@ -7349,54 +7349,56 @@
 
     let penaltyPanel = '';
     if (isAdvisor) {
-      // Read: show existing penalty details
-      const existingView = hasPenalty ? `
-        <div class="dl-penalty-view">
-          ${task.penalty_title ? `<div class="pen-title">${escapeHtml(task.penalty_title)}</div>` : ''}
-          ${task.penalty_amount ? `<div class="pen-amount">${escapeHtml(task.penalty_amount)}</div>` : ''}
-          ${task.penalty_notes ? `<div class="pen-notes">${escapeHtml(task.penalty_notes)}</div>` : ''}
-          ${task.penalty_updated_at ? `<div class="pen-updated">Last updated ${fmtDate(task.penalty_updated_at)}</div>` : ''}
-        </div>` : '';
-      // Edit form (always available for advisor)
-      penaltyPanel = `
-        <div class="dl-penalty-panel" id="dlPenPanel-${taskId}" style="display:none;">
-          ${existingView}
-          <div class="dl-penalty-edit" id="dlPenEdit-${taskId}" style="${hasPenalty ? 'display:none;' : ''}">
-            <div class="dl-penalty-edit-row">
-              <label>Penalty name / authority<input class="field-input" id="dlPenTitle-${taskId}" value="${escapeHtml(task.penalty_title || '')}" placeholder="e.g. SECP late filing fee"></label>
-              <label>Amount<input class="field-input" id="dlPenAmount-${taskId}" value="${escapeHtml(task.penalty_amount || '')}" placeholder="e.g. PKR 10,000/day"></label>
-            </div>
-            <label>Notes / description<textarea class="field-input" id="dlPenNotes-${taskId}">${escapeHtml(task.penalty_notes || '')}</textarea></label>
-            <div class="dl-penalty-btns">
-              <button class="btn-primary" onclick="advisorSavePenalty('${taskId}')">Save penalty</button>
-              ${hasPenalty ? `<button class="btn-ghost btn-row danger" onclick="advisorClearPenalty('${taskId}')">Remove</button>` : ''}
-              ${hasPenalty ? `<button class="btn-ghost btn-row" onclick="dlToggleEditMode('${taskId}', false)">Cancel</button>` : ''}
-            </div>
-          </div>
-          ${hasPenalty ? `<button class="btn-ghost btn-row" style="margin-top:8px; font-size:11px;" onclick="dlToggleEditMode('${taskId}', true)">Edit penalty</button>` : ''}
-        </div>`;
+      // Build penalty view rows without nested ternary backticks
+      let penViewHtml = '';
+      if (hasPenalty) {
+        penViewHtml += '<div class="dl-penalty-view">';
+        if (task.penalty_title)      penViewHtml += '<div class="pen-title">'   + escapeHtml(task.penalty_title)  + '</div>';
+        if (task.penalty_amount)     penViewHtml += '<div class="pen-amount">'  + escapeHtml(task.penalty_amount) + '</div>';
+        if (task.penalty_notes)      penViewHtml += '<div class="pen-notes">'   + escapeHtml(task.penalty_notes)  + '</div>';
+        if (task.penalty_updated_at) penViewHtml += '<div class="pen-updated">Last updated ' + fmtDate(task.penalty_updated_at) + '</div>';
+        penViewHtml += '</div>';
+      }
+      const editStyle   = hasPenalty ? 'display:none;' : '';
+      const removeBtn   = hasPenalty ? '<button class="btn-ghost btn-row danger" onclick="advisorClearPenalty(\'' + taskId + '\')">Remove</button>' : '';
+      const cancelBtn   = hasPenalty ? '<button class="btn-ghost btn-row" onclick="dlToggleEditMode(\'' + taskId + '\', false)">Cancel</button>' : '';
+      const editPenBtn  = hasPenalty ? '<button class="btn-ghost btn-row" style="margin-top:8px;font-size:11px;" onclick="dlToggleEditMode(\'' + taskId + '\', true)">Edit penalty</button>' : '';
+      penaltyPanel = '<div class="dl-penalty-panel" id="dlPenPanel-' + taskId + '" style="display:none;">'
+        + penViewHtml
+        + '<div class="dl-penalty-edit" id="dlPenEdit-' + taskId + '" style="' + editStyle + '">'
+        +   '<div class="dl-penalty-edit-row">'
+        +     '<label>Penalty name / authority<input class="field-input" id="dlPenTitle-' + taskId + '" value="' + escapeHtml(task.penalty_title || '') + '" placeholder="e.g. SECP late filing fee"></label>'
+        +     '<label>Amount<input class="field-input" id="dlPenAmount-' + taskId + '" value="' + escapeHtml(task.penalty_amount || '') + '" placeholder="e.g. PKR 10,000/day"></label>'
+        +   '</div>'
+        +   '<label>Notes / description<textarea class="field-input" id="dlPenNotes-' + taskId + '">' + escapeHtml(task.penalty_notes || '') + '</textarea></label>'
+        +   '<div class="dl-penalty-btns">'
+        +     '<button class="btn-primary" onclick="advisorSavePenalty(\'' + taskId + '\')">Save penalty</button>'
+        +     removeBtn + cancelBtn
+        +   '</div>'
+        + '</div>'
+        + editPenBtn
+        + '</div>';
     } else if (hasPenalty) {
-      // Client: read-only view
-      penaltyPanel = `
-        <div class="dl-penalty-panel" id="dlPenPanel-${taskId}" style="display:none;">
-          <div class="dl-penalty-view">
-            ${task.penalty_title ? `<div class="pen-title">${escapeHtml(task.penalty_title)}</div>` : ''}
-            ${task.penalty_amount ? `<div class="pen-amount">${escapeHtml(task.penalty_amount)}</div>` : ''}
-            ${task.penalty_notes ? `<div class="pen-notes">${escapeHtml(task.penalty_notes)}</div>` : ''}
-          </div>
-        </div>`;
+      let penViewHtml = '<div class="dl-penalty-view">';
+      if (task.penalty_title)  penViewHtml += '<div class="pen-title">'  + escapeHtml(task.penalty_title)  + '</div>';
+      if (task.penalty_amount) penViewHtml += '<div class="pen-amount">' + escapeHtml(task.penalty_amount) + '</div>';
+      if (task.penalty_notes)  penViewHtml += '<div class="pen-notes">'  + escapeHtml(task.penalty_notes)  + '</div>';
+      penViewHtml += '</div>';
+      penaltyPanel = '<div class="dl-penalty-panel" id="dlPenPanel-' + taskId + '" style="display:none;">' + penViewHtml + '</div>';
     }
 
     const penaltyToggle = (isAdvisor || hasPenalty)
-      ? `<button class="${penaltyToggleClass}" onclick="dlTogglePenPanel('${taskId}')">${penaltyToggleLabel}</button>`
+      ? '<button class="' + penaltyToggleClass + '" onclick="dlTogglePenPanel(\'' + taskId + '\')">' + penaltyToggleLabel + '</button>'
       : '';
+
+    const subRow = sub ? '<div class="dl-row-sub">' + escapeHtml(sub) + '</div>' : '';
 
     return `
       <div class="dl-row ${rowClass}" data-task-id="${taskId}">
         <div class="dl-row-top">
           <div class="dl-row-meta">
             <div class="dl-row-title">${escapeHtml(task.title)}</div>
-            ${sub ? `<div class="dl-row-sub">${escapeHtml(sub)}</div>` : ''}
+            ${subRow}
           </div>
           <span class="dl-due-badge ${badgeClass}">${badgeText}</span>
         </div>
